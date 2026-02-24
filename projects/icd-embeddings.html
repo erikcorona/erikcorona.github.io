@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICD Embeddings - Erik Corona</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <header>
+    <div class="name-row">
+      <h1>Erik Corona, Ph.D.</h1>
+      <a href="https://www.linkedin.com/in/erikcorona/" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      </a>
+    </div>
+    <p class="subtitle">Data Scientist &middot; AI &amp; Analytics</p>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a href="index.html" class="active">Projects</a>
+      <a href="../notes/index.html">Notes</a>
+    </nav>
+  </header>
+  <section>
+    <a href="index.html" class="back-link">&larr; All Projects</a>
+    <h2>What Are ICD Codes and Why ICD Embeddings Matter</h2>
+    <div class="article-meta">
+      <div class="tags">
+        <span class="tag">Healthcare</span>
+        <span class="tag">Embeddings</span>
+        <span class="tag">Machine Learning</span>
+        <span class="tag">NLP</span>
+      </div>
+    </div>
+    <div class="article-content">
+      <p>Healthcare data is full of complexity, but one of its most important building blocks is surprisingly simple: ICD codes.</p>
+
+      <h3>What are ICD codes?</h3>
+      <p>ICD (International Classification of Diseases) codes are standardized labels used to record diagnoses and medical conditions. When a doctor identifies what's wrong with a patient (e.g., diabetes, heart failure, pneumonia) that condition is recorded using an ICD code.</p>
+      <p>For example:</p>
+      <ul>
+        <li><strong>E11</strong> &rarr; Type 2 diabetes</li>
+        <li><strong>E11.22</strong> &rarr; Type 2 diabetes with kidney complications</li>
+        <li><strong>I50.32</strong> &rarr; Chronic diastolic heart failure</li>
+      </ul>
+      <p>These codes are used globally and power everything from insurance billing to clinical research to public health statistics. They ensure that hospitals, insurers, and researchers are all speaking the same language.</p>
+
+      <h3>The problem with raw ICD codes</h3>
+      <p>While ICD codes are great for standardization, they pose a challenge for data science and machine learning.</p>
+      <p>To a computer, ICD codes are just symbols. The model doesn't inherently know that:</p>
+      <ul>
+        <li>Two diabetes codes are closely related</li>
+        <li>Hypertension and heart failure often co-occur</li>
+        <li>Cancer diagnoses are fundamentally different from infections</li>
+      </ul>
+      <p>If you treat ICD codes as simple IDs&mdash;like category labels&mdash;you lose their medical meaning. The model sees E11.9 and E11.22 as no more related than diabetes and a broken arm.</p>
+      <p>This is where embeddings come in.</p>
+
+      <h3>What are ICD embeddings?</h3>
+      <p>ICD embeddings convert each diagnosis code into a numerical representation that captures its clinical meaning.</p>
+      <p>Instead of treating diagnoses as isolated labels, embeddings place them in a mathematical space where:</p>
+      <ul>
+        <li>Similar conditions are close together</li>
+        <li>Dissimilar conditions are far apart</li>
+        <li>Relationships emerge naturally from data</li>
+      </ul>
+      <p>These embeddings are learned from large patient datasets by observing which diagnoses tend to appear together, over time, and in similar clinical contexts.</p>
+      <p>In simple terms:</p>
+      <ul>
+        <li><strong>ICD codes alone</strong> are labels</li>
+        <li><strong>ICD embeddings</strong> give those labels meaning</li>
+      </ul>
+
+      <h3>Why embeddings are a good idea</h3>
+
+      <h4>1. They capture medical similarity automatically</h4>
+      <p>Different codes for diabetes cluster together. Cardiovascular conditions group naturally. Rare conditions benefit from proximity to related, better-represented diagnoses.</p>
+
+      <h4>2. They reduce coding noise</h4>
+      <p>ICD coding varies between providers and institutions. Embeddings smooth over small differences by focusing on patterns, not exact code matches.</p>
+
+      <h4>3. They improve predictive performance</h4>
+      <p>Models using embeddings consistently outperform models using raw ICD codes for tasks like:</p>
+      <ul>
+        <li>Risk prediction</li>
+        <li>Cost forecasting</li>
+        <li>Disease progression modeling</li>
+        <li>Hospital readmission prediction</li>
+      </ul>
+
+      <h4>4. They generalize better to new or rare cases</h4>
+      <p>Even if a model hasn't seen a specific ICD code often, embeddings allow it to infer behavior based on similar diagnoses.</p>
+
+      <h4>5. They enable richer representations of patient history</h4>
+      <p>A patient isn't just a list of diagnoses. Embeddings allow entire medical histories to be summarized in a way that models can reason over effectively.</p>
+
+      <h3>The big picture</h3>
+      <p>Modern language models don't treat words as arbitrary IDs. They use embeddings to capture meaning and context. The same principle applies to healthcare.</p>
+      <p>ICD embeddings turn clinical codes from static labels into usable signals, unlocking more accurate, robust, and clinically meaningful models.</p>
+      <p>If you're building predictive systems on healthcare data, embeddings aren't nice to have&mdash;they are foundational.</p>
+    </div>
+  </section>
+</body>
+</html>
