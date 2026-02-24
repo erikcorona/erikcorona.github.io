@@ -1,0 +1,151 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: #e0e0e0;
+  background-color: #1a1a2e;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+a { color: #6fa3ef; }
+
+/* Header */
+header {
+  text-align: center;
+  padding: 3rem 0;
+  border-bottom: 1px solid #2a2a4a;
+  margin-bottom: 2rem;
+}
+
+.name-row { display: inline-flex; align-items: center; gap: 0.5rem; }
+h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.subtitle { color: #9a9ab0; font-size: 1.1rem; }
+.name-row a { display: inline-flex; color: #0077b5; transition: opacity 0.2s; }
+.name-row a:hover { opacity: 0.7; }
+
+/* Nav */
+nav {
+  margin-top: 1.5rem;
+}
+
+nav a {
+  color: #9a9ab0;
+  text-decoration: none;
+  margin: 0 1rem;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+
+nav a:hover,
+nav a.active {
+  color: #e0e0e0;
+}
+
+/* Sections */
+section { margin-bottom: 2rem; }
+h2 { margin-bottom: 1rem; color: #7b8fc7; }
+
+/* Project cards */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: #16213e;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: border-color 0.2s;
+}
+
+.card:hover {
+  border-color: #6fa3ef;
+}
+
+.card h3 {
+  margin-bottom: 0.5rem;
+  color: #f0f0f0;
+}
+
+.card p {
+  color: #9a9ab0;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.card a {
+  text-decoration: none;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  background: #2a2a4a;
+  color: #9a9ab0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* Notes list */
+.note-list {
+  list-style: none;
+}
+
+.note-list li {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.note-list li:last-child {
+  border-bottom: none;
+}
+
+.note-date {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.note-list h3 {
+  margin: 0.25rem 0;
+}
+
+.note-list h3 a {
+  text-decoration: none;
+  color: #f0f0f0;
+  transition: color 0.2s;
+}
+
+.note-list h3 a:hover {
+  color: #6fa3ef;
+}
+
+.note-excerpt {
+  color: #9a9ab0;
+  font-size: 0.95rem;
+}
+
+/* Article content (project detail / note detail) */
+.article-meta {
+  color: #9a9ab0;
+  margin-bottom: 1.5rem;
+}
+
+.article-content p {
+  margin-bottom: 1rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
