@@ -78,7 +78,8 @@ h2 { margin-bottom: 1rem; color: #7b8fc7; }
   margin-bottom: 1rem;
 }
 
-a.card {
+a.card,
+a.card:hover {
   text-decoration: none;
   color: inherit;
   display: block;
