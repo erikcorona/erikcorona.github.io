@@ -108,7 +108,7 @@
       concat:     { name: "Concatenation", group: "projection", detail: "All 10 features concatenated per position.<br><br>128+64+16+8+16+32+16+1+2+16 = <code>299 dims</code>", params: "0 parameters" },
       projection: { name: "Input Projection", group: "projection", detail: "Projects concatenated input to hidden dimension.<br><br><code>Linear(299, 480)</code>", params: "144K parameters" },
       mlm:        { name: "MLM Head", group: "mlm", detail: "Maps hidden states to ICD predictions.<br><br><code>Linear(480, 480) → GELU → LayerNorm → Linear(480, 15,210)</code><br><br>15% of unique ICD codes per sequence are masked (all occurrences).", params: "~7.5M parameters" },
-      loss:       { name: "Training Objective", group: "mlm", detail: "No matrix multiplication here&mdash;this is a reduction, not a linear transformation.<br><br><code>softmax(512, 15210) → index true labels → (mask_count,) → -log → mean → scalar</code><br><br>Only masked positions contribute. 15% of unique ICD codes per sequence are masked (all occurrences), so ~77 of 512 positions are typically evaluated.", params: "0 parameters" },
+      loss:       { name: "Training Objective", group: "mlm", detail: "No matrix multiplication&mdash;this is a per-position reduction.<br><br>For each masked position <em>i</em>:<br><code>softmax(logits[i]) → (15,210,) probs → p[yᵢ] → −log(p[yᵢ]) → scalar</code><br><br>Average the ~77 per-position losses into a single scalar. 15% of unique ICD codes per sequence are masked (all occurrences).", params: "0 parameters" },
       overview:   { name: "Model Overview", group: null, detail: "A 29.9M parameter transformer that reads a patient's claim history and learns to predict masked ICD diagnosis codes from surrounding context. Each position in the sequence combines 10 input features into a 299-dimensional vector.", params: "29.9M total parameters" },
     };
     for (let i = 1; i <= 7; i++) {
@@ -248,7 +248,7 @@
     }
     mv.ln_final=mv.ln_a_1;
     mv.mlm=[[512,480,'H','in'],'×',[480,480,'W₁','wt'],'→','GELU→LN','→',[512,480,'','in'],'×',[480,15210,'W₂','wt'],'=',[512,15210,'logits','out']];
-    mv.loss=[[512,15210,'logits','in'],'→','softmax','→','index[y]','→',[77,1,'-log(p)','in'],'→','mean','=',[1,1,'loss','out']];
+    mv.loss=[[1,15210,'logits[i]','in'],'→','softmax','→',[1,15210,'probs','out'],'→','p[yᵢ]','→','-log','→','scalar','×~77 masked pos','→','mean','=',[1,1,'loss','out']];
     mv.overview=[];
     const mathSvg=d3.select('#info-math');
     function renderMath(key){
