@@ -216,6 +216,7 @@
       transformer:{ name: "Transformer Encoder Layer", group: "transformer", detail: "Each of the 7 identical layers uses pre-norm architecture:<br><br>• <code>LayerNorm → Multi-Head Attention (6 heads, 80 dims/head)</code><br>• <code>LayerNorm → FFN: Linear(480, 1920) → GELU → Linear(1920, 480)</code><br>• <code>Dropout(0.1)</code><br><br>Attention lets each claim attend to every other claim in the patient's history.", params: "~2.8M parameters per layer · 19.4M total" },
       mlm:        { name: "MLM Head", group: "mlm", detail: "Maps transformer hidden states to ICD predictions over the full embedding vocabulary.<br><br><code>Linear(480, 480) → GELU → LayerNorm → Linear(480, 15,210)</code><br><br>15% of unique ICD codes per sequence are masked (all occurrences), and the model predicts them from context.", params: "~7.5M parameters" },
       loss:       { name: "Training Objective", group: "mlm", detail: "Cross-entropy loss over the 15,210-class vocabulary, computed only at masked positions. All occurrences of each selected code are masked together, forcing the model to use surrounding context.", params: "" },
+      overview:   { name: "Model Overview", group: null, detail: "A 29.9M parameter transformer that reads a patient's claim history and learns to predict masked ICD diagnosis codes from surrounding context. Each position in the sequence combines 10 input features into a 299-dimensional vector.", params: "29.9M total parameters" },
     };
 
     const defaultInfo = {
@@ -408,6 +409,14 @@
     lossG.append('text').attr('x', lossCX).attr('y', row2Y + 11).attr('text-anchor', 'middle')
       .attr('fill', '#9a9ab0').attr('font-size', 9).text('Loss');
 
+    // ── Overview node (top-right) ─────────────────────────────
+    const ovG = svg.append("g").attr("class", "arch-node").attr("data-component", "overview");
+    ovG.append("ellipse").attr("cx", 630).attr("cy", 20).attr("rx", 52).attr("ry", 15)
+      .attr("fill", "#16213e").attr("stroke", "#3a3a5a").attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,2");
+    ovG.append("text").attr("x", 630).attr("y", 24).attr("text-anchor", "middle")
+      .attr("fill", "#9a9ab0").attr("font-size", 10).text("Overview");
+
     // ── Hover interactivity ───────────────────────────────────
     const infoName   = document.getElementById('info-name');
     const infoDetail = document.getElementById('info-detail');
@@ -429,7 +438,6 @@
 
     document.querySelectorAll('.arch-node').forEach(el => {
       el.addEventListener('mouseenter', () => showInfo(el.dataset.component));
-      el.addEventListener('mouseleave', () => showInfo(null));
     });
   </script>
 </body>
