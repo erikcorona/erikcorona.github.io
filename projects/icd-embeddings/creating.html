@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Creating ICD Embeddings - Erik Corona</title>
+  <title>Creating ICD-10 Embeddings - Erik Corona</title>
   <link rel="stylesheet" href="../../styles.css">
   <style>
     .arch-svg { width: 100%; max-width: 900px; margin: 1.5rem auto; display: block; }
@@ -48,9 +48,15 @@
   </header>
   <section>
     <a href="index.html" class="back-link">&larr; ICD Embeddings</a>
-    <h2>Let's Create ICD Embeddings!</h2>
+    <h2>Let's Create ICD-10 Embeddings!</h2>
     <div class="article-content">
-      <p>We use a BERT-style masked language model to learn ICD embeddings. The model takes a patient's claim history as a sequence of up to 512 positions, masks 15% of ICD codes, and learns to predict them from surrounding clinical context.</p>
+      <p>We use a BERT-style masked language model to learn ICD-10 embeddings. The model takes a patient's claim history as a sequence of up to 512 positions, masks a subset of ICD-10 codes, and learns to predict them from surrounding clinical context.</p>
+
+      <h3>Training in Two Passes</h3>
+      <p>The first pass masks 15% of ICD-10 codes at random. This teaches the model the basic structure of clinical data&mdash;which codes tend to appear together, what procedures and specialties co-occur with which diagnoses, and how conditions relate to patient demographics.</p>
+      <p>But there's a problem. Many ICD-10 codes repeat within a patient's history, especially chronic conditions like Type 2 diabetes. If the model sees diabetes at positions 1, 4, and 9, and only position 4 is masked, the answer is trivially visible at positions 1 and 9. The model can learn a shortcut: <em>if a code appeared before, it will appear again</em>. That's not clinical insight&mdash;it's just pattern matching on repetition.</p>
+      <p>The second pass fixes this by masking 15% of <strong>unique</strong> ICD-10 codes, then hiding <strong>all occurrences</strong> of each selected code. If diabetes is chosen for masking, every instance of it disappears from the sequence. Now the model can't rely on repetition. It has to infer diabetes from the surrounding context&mdash;the medications, lab values, complications, and co-occurring conditions that actually signal the disease. This forces the model to learn the true relationships between codes, not just how often they repeat.</p>
+
       <h3>Model Architecture</h3>
       <p>Hover over any component to explore what it does and how many parameters it contributes. All shapes are shown per patient&mdash;in practice, this is batched tensor multiplication with a batch dimension of 64 patients processed in parallel, omitted below for clarity.</p>
       <svg class="arch-svg" id="arch-svg" viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg">
