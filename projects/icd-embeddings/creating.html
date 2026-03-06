@@ -113,9 +113,12 @@
       info['attn_'+i] = { name: 'Layer '+i+': Multi-Head Attention', group: 'transformer',
         detail: 'Pre-norm self-attention in layer '+i+' of 7.<br><br><code>LayerNorm(480) → MultiHead(Q, K, V)</code> + residual<br><br>• 6 heads, 80 dims/head<br>• Q/K/V projections: 3 × (480×480 + 480) = 692,640<br>• Output projection: 480×480 + 480 = 230,880<br>• LayerNorm: 960',
         params: '~924K parameters' };
-      info['ffn_'+i] = { name: 'Layer '+i+': Feed-Forward Network', group: 'transformer',
-        detail: 'Pre-norm FFN in layer '+i+' of 7.<br><br><code>LayerNorm(480) → Linear(480, 1920) → GELU → Linear(1920, 480) → Dropout(0.1)</code> + residual<br><br>• Up: 480×1920 + 1920 = 923,520<br>• Down: 1920×480 + 480 = 922,080<br>• LayerNorm: 960',
-        params: '~1.85M parameters' };
+      info['up_'+i] = { name: 'Layer '+i+': FFN Up-Projection', group: 'transformer',
+        detail: 'Expands hidden dim by 4× in layer '+i+' of 7.<br><br><code>LayerNorm(480) → Linear(480, 1920) → GELU</code><br><br>• Weight: 480 × 1920 = 921,600<br>• Bias: 1,920<br>• LayerNorm: 960',
+        params: '~924K parameters' };
+      info['down_'+i] = { name: 'Layer '+i+': FFN Down-Projection', group: 'transformer',
+        detail: 'Compresses back to hidden dim in layer '+i+' of 7, with residual connection.<br><br><code>Linear(1920, 480) → Dropout(0.1)</code> + residual<br><br>• Weight: 1920 × 480 = 921,600<br>• Bias: 480',
+        params: '~922K parameters' };
     }
     const features = [
       { id: 'icd', name: 'ICD Code', dim: '128', group: 'embeddings' },
@@ -138,7 +141,8 @@
     ];
     for (let i=1;i<=7;i++) {
       pipeline.push({ id:'attn_'+i, label:'Attn '+i, sub:'6h·80d', group:'transformer', rx:26, ry:14, layer:i, isAttn:true });
-      pipeline.push({ id:'ffn_'+i, label:'FFN '+i, sub:'480→1920', group:'transformer', rx:26, ry:14, layer:i });
+      pipeline.push({ id:'up_'+i, label:'Up '+i, sub:'480→1920', group:'transformer', rx:26, ry:14, layer:i });
+      pipeline.push({ id:'down_'+i, label:'Down '+i, sub:'1920→480', group:'transformer', rx:26, ry:14, layer:i });
     }
     pipeline.push({ id:'mlm', label:'MLM Head', sub:'480→15,210', group:'mlm', rx:52, ry:20 });
     pipeline.push({ id:'loss', label:'CE Loss', sub:'', group:'mlm', rx:34, ry:18 });
