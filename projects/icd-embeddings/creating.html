@@ -182,6 +182,11 @@
     });
     fPos.forEach(f=>{
       const c=pal[f.group], g=svg.append('g').attr('class','arch-node').attr('data-component',f.id);
+      // Stacked ghost copies to suggest 512 positions
+      [3,2,1].forEach(d=>{
+        g.append('ellipse').attr('cx',f.cx+d*1.5).attr('cy',f.cy+d*1.5).attr('rx',fRX).attr('ry',fRY)
+          .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',0.5).attr('opacity',0.15);
+      });
       g.append('ellipse').attr('cx',f.cx).attr('cy',f.cy).attr('rx',fRX).attr('ry',fRY)
         .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5);
       g.append('text').attr('x',f.cx).attr('y',f.cy-3).attr('text-anchor','middle')
@@ -189,6 +194,9 @@
       g.append('text').attr('x',f.cx).attr('y',f.cy+10).attr('text-anchor','middle')
         .attr('fill','#6fa3ef').attr('font-size',9).attr('font-family',"'SF Mono','Fira Code',monospace").text(f.dim);
     });
+    // ×512 label near the feature stack
+    svg.append('text').attr('x',fCX+fRX+8).attr('y',fSY-6)
+      .attr('fill','#9a9ab0').attr('font-size',9).attr('font-family',"'SF Mono','Fira Code',monospace").text('×512');
     for(let i=0;i<pipeline.length-1;i++){
       const a=pipeline[i],b=pipeline[i+1];
       if(a.cy===b.cy){ arrow(a.cx+a.rx,a.cy,b.cx-b.rx,b.cy); }
