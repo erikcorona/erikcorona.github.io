@@ -20,6 +20,7 @@
     .arch-info-detail { font-size: 0.9rem; color: #e0e0e0; line-height: 1.6; }
     .arch-info-detail code { background: #2a2a4a; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.85rem; color: #6fa3ef; }
     .arch-info-params { margin-top: 0.5rem; font-size: 0.85rem; color: #9a9ab0; }
+    .info-math-svg { width: 100%; max-height: 90px; margin-top: 0.75rem; display: none; }
     .param-bar-container { max-width: 900px; margin: 0 auto; }
     .param-bar-label { font-size: 0.85rem; color: #9a9ab0; margin-bottom: 0.4rem; display: flex; justify-content: space-between; }
     .param-bar { display: flex; height: 22px; border-radius: 4px; overflow: hidden; background: #0d1117; }
@@ -63,6 +64,7 @@
         <div class="arch-info-name" id="info-name">Model Overview</div>
         <div class="arch-info-detail" id="info-detail">A 29.9M parameter transformer that reads a patient's claim history and learns to predict masked ICD diagnosis codes from surrounding context. Each position in the sequence combines 10 input features into a 299-dimensional vector.</div>
         <div class="arch-info-params" id="info-params">29.9M total parameters</div>
+        <svg id="info-math" class="info-math-svg" viewBox="0 0 600 90" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
       </div>
       <div class="param-bar-container">
         <div class="param-bar-label"><span>Parameter Distribution</span><span>29.9M parameters</span></div>
@@ -221,6 +223,56 @@
       .attr('fill','#16213e').attr('stroke','#3a3a5a').attr('stroke-width',1).attr('stroke-dasharray','3,2');
     ovG.append('text').attr('x',635).attr('y',22).attr('text-anchor','middle')
       .attr('fill','#9a9ab0').attr('font-size',10).text('Overview');
+    // Matrix visualization data: arrays of [rows,cols,label,type] or operator strings
+    const mColors={idx:'#6fa3ef',in:'#4a7fb5',wt:'#8a5a6a',bias:'#5a9a6a',out:'#7a6a9a',emb:'#4a7fb5'};
+    function dimPx(d){if(d<=1)return 5;if(d<=8)return 10;if(d<=20)return 16;if(d<=64)return 24;if(d<=128)return 32;if(d<=300)return 40;if(d<=500)return 48;if(d<=2000)return 62;return 78;}
+    const mv={};
+    mv.icd=[[1,1,'i','idx'],'→',[15210,128,'E_icd','emb'],'=',[1,128,'e','out']];
+    mv.procedure=[[1,1,'i','idx'],'→',[12871,64,'E_proc','emb'],'=',[1,64,'e','out']];
+    mv.specialty=[[1,1,'i','idx'],'→',[565,16,'E_spec','emb'],'=',[1,16,'e','out']];
+    mv.pos=[[1,1,'i','idx'],'→',[9,8,'E_pos','emb'],'=',[1,8,'e','out']];
+    mv.zip=[[1,1,'i','idx'],'→',[1000,16,'E_zip','emb'],'=',[1,16,'e','out']];
+    mv.amounts=[[1,2,'x','in'],'×',[2,16,'W','wt'],'+',[1,16,'b','bias'],'=',[1,16,'h','out']];
+    mv.time=['sin/cos(t·ω)','=',[1,32,'h','out']];
+    mv.age=['age/120','=',[1,1,'h','out']];
+    mv.gender=['onehot(g)','=',[1,2,'h','out']];
+    mv.labs=[[1,20,'x','in'],'×',[20,16,'W','wt'],'+',[1,16,'b','bias'],'=',[1,16,'h','out']];
+    mv.concat=[[1,128,'','in'],'⊕',[1,64,'','in'],'⊕','…','⊕',[1,16,'','in'],'=',[1,299,'x','out']];
+    mv.projection=[[1,299,'x','in'],'×',[299,480,'W','wt'],'+',[1,480,'b','bias'],'=',[1,480,'h','out']];
+    for(let i=1;i<=7;i++){
+      mv['ln_a_'+i]=[[1,480,'x','in'],'→',[1,480,'γ','wt'],'⊙','(x̂)','+',[1,480,'β','bias'],'=',[1,480,'h','out']];
+      mv['attn_'+i]=[[1,480,'x','in'],'×',[480,1440,'W_QKV','wt'],'→','6h·attn','→',[1,480,'','in'],'×',[480,480,'W_O','wt'],'=',[1,480,'h','out']];
+      mv['ln_f_'+i]=mv['ln_a_'+i];
+      mv['up_'+i]=[[1,480,'x','in'],'×',[480,1920,'W_up','wt'],'+',[1,1920,'b','bias'],'→','GELU','=',[1,1920,'h','out']];
+      mv['down_'+i]=[[1,1920,'h','in'],'×',[1920,480,'W_dn','wt'],'+',[1,480,'b','bias'],'=',[1,480,'x','out']];
+    }
+    mv.ln_final=mv.ln_a_1;
+    mv.mlm=[[1,480,'h','in'],'×',[480,480,'W₁','wt'],'→','GELU→LN','→',[1,480,'','in'],'×',[480,15210,'W₂','wt'],'=',[1,15210,'logits','out']];
+    mv.loss=['-log( softmax(logits)[ y ] )'];
+    mv.overview=[];
+    const mathSvg=d3.select('#info-math');
+    function renderMath(key){
+      mathSvg.selectAll('*').remove();
+      const ops=mv[key];
+      if(!ops||!ops.length){document.getElementById('info-math').style.display='none';return;}
+      document.getElementById('info-math').style.display='block';
+      const cy=42;let x=8;
+      ops.forEach(op=>{
+        if(typeof op==='string'){
+          mathSvg.append('text').attr('x',x).attr('y',cy+4).attr('fill','#9a9ab0').attr('font-size',12).attr('font-family',"'SF Mono','Fira Code',monospace").text(op);
+          x+=op.length*7.5+8;
+        }else{
+          const[r,c,label,type]=op;
+          const h=dimPx(r),w=dimPx(c),col=mColors[type]||'#555';
+          if(label)mathSvg.append('text').attr('x',x+w/2).attr('y',cy-h/2-4).attr('text-anchor','middle').attr('fill','#9a9ab0').attr('font-size',9).attr('font-family',"'SF Mono','Fira Code',monospace").text(label);
+          mathSvg.append('rect').attr('x',x).attr('y',cy-h/2).attr('width',w).attr('height',h).attr('fill',col).attr('fill-opacity',0.25).attr('stroke',col).attr('stroke-width',1).attr('rx',2);
+          const dim=r===1&&c===1?'1':r+'×'+c;
+          mathSvg.append('text').attr('x',x+w/2).attr('y',cy+h/2+11).attr('text-anchor','middle').attr('fill','#666').attr('font-size',7.5).attr('font-family',"'SF Mono','Fira Code',monospace").text(dim);
+          x+=w+8;
+        }
+      });
+      document.getElementById('info-math').setAttribute('viewBox','0 0 '+x+' 90');
+    }
     const infoName=document.getElementById('info-name');
     const infoDetail=document.getElementById('info-detail');
     const infoParams=document.getElementById('info-params');
@@ -232,6 +284,7 @@
       infoPanel.classList.toggle('active',!!key&&key!=='overview');
       const gr=c.group||null;
       segs.forEach(s=>{ s.classList.toggle('dimmed',!!gr&&s.dataset.group!==gr); });
+      renderMath(key||'overview');
     }
     document.querySelectorAll('.arch-node').forEach(el=>{
       el.addEventListener('mouseenter',()=>showInfo(el.dataset.component));
