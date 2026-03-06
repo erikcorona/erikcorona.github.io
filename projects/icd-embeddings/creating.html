@@ -225,7 +225,7 @@
       .attr('fill','#9a9ab0').attr('font-size',10).text('Overview');
     // Matrix visualization data: arrays of [rows,cols,label,type] or operator strings
     const mColors={idx:'#6fa3ef',in:'#4a7fb5',wt:'#8a5a6a',bias:'#5a9a6a',out:'#7a6a9a',emb:'#4a7fb5'};
-    function dimPx(d){if(d<=1)return 5;if(d<=8)return 10;if(d<=20)return 16;if(d<=64)return 24;if(d<=128)return 32;if(d<=300)return 40;if(d<=500)return 48;if(d<=2000)return 62;return 78;}
+    function dimPx(d){if(typeof d==='string')return 38;if(d<=1)return 5;if(d<=8)return 10;if(d<=20)return 16;if(d<=64)return 24;if(d<=128)return 32;if(d<=300)return 40;if(d<=500)return 48;if(d<=2000)return 62;return 78;}
     const mv={};
     mv.icd=[[1,1,'i','idx'],'→',[15210,128,'E_icd','emb'],'=',[1,128,'e','out']];
     mv.procedure=[[1,1,'i','idx'],'→',[12871,64,'E_proc','emb'],'=',[1,64,'e','out']];
@@ -237,17 +237,17 @@
     mv.age=['age/120','=',[1,1,'h','out']];
     mv.gender=['onehot(g)','=',[1,2,'h','out']];
     mv.labs=[[1,20,'x','in'],'×',[20,16,'W','wt'],'+',[1,16,'b','bias'],'=',[1,16,'h','out']];
-    mv.concat=[[1,128,'','in'],'⊕',[1,64,'','in'],'⊕','…','⊕',[1,16,'','in'],'=',[1,299,'x','out']];
-    mv.projection=[[1,299,'x','in'],'×',[299,480,'W','wt'],'+',[1,480,'b','bias'],'=',[1,480,'h','out']];
+    mv.concat=[['S',128,'','in'],'⊕',['S',64,'','in'],'⊕','…','⊕',['S',16,'','in'],'=',['S',299,'X','out']];
+    mv.projection=[['S',299,'X','in'],'×',[299,480,'W','wt'],'+',['S',480,'b','bias'],'=',['S',480,'H','out']];
     for(let i=1;i<=7;i++){
-      mv['ln_a_'+i]=[[1,480,'x','in'],'→',[1,480,'γ','wt'],'⊙','(x̂)','+',[1,480,'β','bias'],'=',[1,480,'h','out']];
-      mv['attn_'+i]=[[1,480,'x','in'],'×',[480,1440,'W_QKV','wt'],'→','6h·attn','→',[1,480,'','in'],'×',[480,480,'W_O','wt'],'=',[1,480,'h','out']];
+      mv['ln_a_'+i]=[['S',480,'X','in'],'→',['S',480,'γ⊙x̂+β','wt'],'=',['S',480,'H','out']];
+      mv['attn_'+i]=[['S',480,'X','in'],'×',[480,1440,'W_QKV','wt'],'→',['S','S','QKᵀ/√80','wt'],'→','softmax·V','→',['S',480,'','in'],'×',[480,480,'W_O','wt'],'=',['S',480,'H','out']];
       mv['ln_f_'+i]=mv['ln_a_'+i];
-      mv['up_'+i]=[[1,480,'x','in'],'×',[480,1920,'W_up','wt'],'+',[1,1920,'b','bias'],'→','GELU','=',[1,1920,'h','out']];
-      mv['down_'+i]=[[1,1920,'h','in'],'×',[1920,480,'W_dn','wt'],'+',[1,480,'b','bias'],'=',[1,480,'x','out']];
+      mv['up_'+i]=[['S',480,'X','in'],'×',[480,1920,'W_up','wt'],'+',['S',1920,'b','bias'],'→','GELU','=',['S',1920,'H','out']];
+      mv['down_'+i]=[['S',1920,'H','in'],'×',[1920,480,'W_dn','wt'],'+',['S',480,'b','bias'],'=',['S',480,'X','out']];
     }
     mv.ln_final=mv.ln_a_1;
-    mv.mlm=[[1,480,'h','in'],'×',[480,480,'W₁','wt'],'→','GELU→LN','→',[1,480,'','in'],'×',[480,15210,'W₂','wt'],'=',[1,15210,'logits','out']];
+    mv.mlm=[['S',480,'H','in'],'×',[480,480,'W₁','wt'],'→','GELU→LN','→',['S',480,'','in'],'×',[480,15210,'W₂','wt'],'=',['S',15210,'logits','out']];
     mv.loss=['-log( softmax(logits)[ y ] )'];
     mv.overview=[];
     const mathSvg=d3.select('#info-math');
@@ -266,7 +266,7 @@
           const h=dimPx(r),w=dimPx(c),col=mColors[type]||'#555';
           if(label)mathSvg.append('text').attr('x',x+w/2).attr('y',cy-h/2-4).attr('text-anchor','middle').attr('fill','#9a9ab0').attr('font-size',9).attr('font-family',"'SF Mono','Fira Code',monospace").text(label);
           mathSvg.append('rect').attr('x',x).attr('y',cy-h/2).attr('width',w).attr('height',h).attr('fill',col).attr('fill-opacity',0.25).attr('stroke',col).attr('stroke-width',1).attr('rx',2);
-          const dim=r===1&&c===1?'1':r+'×'+c;
+          const dim=(r===1&&c===1)?'1':(typeof r==='string'||typeof c==='string')?r+'×'+c:r+'×'+c;
           mathSvg.append('text').attr('x',x+w/2).attr('y',cy+h/2+11).attr('text-anchor','middle').attr('fill','#666').attr('font-size',7.5).attr('font-family',"'SF Mono','Fira Code',monospace").text(dim);
           x+=w+8;
         }
