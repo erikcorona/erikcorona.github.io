@@ -6,143 +6,35 @@
   <title>Creating ICD Embeddings - Erik Corona</title>
   <link rel="stylesheet" href="../../styles.css">
   <style>
-    .arch-container {
-      margin: 2rem 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* Feature grid */
-    .arch-features {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 0.5rem;
+    .arch-svg {
       width: 100%;
-      max-width: 700px;
+      max-width: 720px;
+      margin: 1.5rem auto;
+      display: block;
     }
-
-    .arch-feature {
-      background: #16213e;
-      border: 1px solid #2a2a4a;
-      border-radius: 6px;
-      padding: 0.6rem 0.4rem;
-      text-align: center;
-      cursor: default;
-      transition: border-color 0.2s, box-shadow 0.2s;
+    .arch-node { cursor: default; }
+    .arch-node rect {
+      transition: stroke-width 0.2s, filter 0.2s;
     }
-
-    .arch-feature:hover, .arch-block:hover {
-      border-color: #6fa3ef;
-      box-shadow: 0 0 12px rgba(111, 163, 239, 0.15);
+    .arch-node:hover rect {
+      stroke-width: 2.5;
+      filter: url(#glow);
     }
-
-    .arch-feature-name {
-      font-size: 0.75rem;
-      color: #e0e0e0;
-      margin-bottom: 0.25rem;
-      line-height: 1.2;
+    .conn-line {
+      stroke: #2a2a4a;
+      stroke-width: 1;
+      fill: none;
     }
-
-    .arch-feature-dim {
-      font-size: 0.7rem;
-      color: #6fa3ef;
+    .arrow-line {
+      stroke: #3a3a5a;
+      stroke-width: 1.5;
+      fill: none;
+    }
+    .arrow-head { fill: #3a3a5a; }
+    .dim-label {
+      font-size: 10px;
+      fill: #6fa3ef;
       font-family: 'SF Mono', 'Fira Code', monospace;
-    }
-
-    /* Arrows */
-    .arch-arrow {
-      width: 2px;
-      height: 28px;
-      background: #2a2a4a;
-      position: relative;
-      margin: 0;
-    }
-
-    .arch-arrow::after {
-      content: '';
-      position: absolute;
-      bottom: -5px;
-      left: -4px;
-      border-left: 5px solid transparent;
-      border-right: 5px solid transparent;
-      border-top: 6px solid #2a2a4a;
-    }
-
-    /* Merge indicator */
-    .arch-merge {
-      width: 100%;
-      max-width: 700px;
-      height: 20px;
-      position: relative;
-      margin-top: 0.5rem;
-    }
-
-    .arch-merge::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 10%;
-      right: 10%;
-      height: 1px;
-      background: #2a2a4a;
-    }
-
-    .arch-merge::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 2px;
-      height: 20px;
-      background: #2a2a4a;
-    }
-
-    /* Architecture blocks */
-    .arch-block {
-      background: #16213e;
-      border: 1px solid #2a2a4a;
-      border-radius: 8px;
-      padding: 1rem 2rem;
-      text-align: center;
-      cursor: default;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      width: 100%;
-      max-width: 360px;
-    }
-
-    .arch-block-title {
-      font-size: 0.95rem;
-      color: #e0e0e0;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-
-    .arch-block-sub {
-      font-size: 0.8rem;
-      color: #9a9ab0;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-    }
-
-    .arch-block-large {
-      max-width: 420px;
-      padding: 1.5rem 2rem;
-      border-color: #3a3a5a;
-    }
-
-    .arch-block-large .arch-block-title {
-      font-size: 1.05rem;
-    }
-
-    /* Section labels */
-    .arch-section-label {
-      font-size: 0.75rem;
-      color: #9a9ab0;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.5rem;
-      text-align: center;
     }
 
     /* Info panel */
@@ -151,30 +43,23 @@
       border: 1px solid #2a2a4a;
       border-radius: 8px;
       padding: 1.25rem 1.5rem;
-      width: 100%;
-      max-width: 700px;
-      margin-top: 2rem;
-      min-height: 120px;
+      max-width: 720px;
+      margin: 0 auto 1.5rem;
+      min-height: 110px;
       transition: border-color 0.2s;
     }
-
-    .arch-info.active {
-      border-color: #3a4a6a;
-    }
-
+    .arch-info.active { border-color: #3a4a6a; }
     .arch-info-name {
       font-size: 1rem;
       color: #7b8fc7;
       font-weight: 600;
       margin-bottom: 0.5rem;
     }
-
     .arch-info-detail {
       font-size: 0.9rem;
       color: #e0e0e0;
       line-height: 1.6;
     }
-
     .arch-info-detail code {
       background: #2a2a4a;
       padding: 0.1rem 0.4rem;
@@ -182,7 +67,6 @@
       font-size: 0.85rem;
       color: #6fa3ef;
     }
-
     .arch-info-params {
       margin-top: 0.5rem;
       font-size: 0.85rem;
@@ -191,11 +75,9 @@
 
     /* Parameter bar */
     .param-bar-container {
-      width: 100%;
-      max-width: 700px;
-      margin-top: 1.5rem;
+      max-width: 720px;
+      margin: 0 auto;
     }
-
     .param-bar-label {
       font-size: 0.85rem;
       color: #9a9ab0;
@@ -203,32 +85,24 @@
       display: flex;
       justify-content: space-between;
     }
-
     .param-bar {
       display: flex;
-      height: 24px;
+      height: 22px;
       border-radius: 4px;
       overflow: hidden;
       background: #0d1117;
     }
-
     .param-segment {
       transition: opacity 0.2s;
-      position: relative;
       cursor: default;
     }
-
-    .param-segment.dimmed {
-      opacity: 0.25;
-    }
-
+    .param-segment.dimmed { opacity: 0.2; }
     .param-bar-legend {
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
       margin-top: 0.5rem;
     }
-
     .param-legend-item {
       display: flex;
       align-items: center;
@@ -236,25 +110,10 @@
       font-size: 0.75rem;
       color: #9a9ab0;
     }
-
     .param-legend-swatch {
       width: 10px;
       height: 10px;
       border-radius: 2px;
-    }
-
-    /* Responsive */
-    @media (max-width: 600px) {
-      .arch-features {
-        grid-template-columns: repeat(3, 1fr);
-      }
-      .arch-block {
-        max-width: 280px;
-        padding: 0.8rem 1rem;
-      }
-      .arch-block-large {
-        max-width: 300px;
-      }
     }
   </style>
 </head>
@@ -277,198 +136,88 @@
     <a href="index.html" class="back-link">&larr; ICD Embeddings</a>
     <h2>Let's Create ICD Embeddings!</h2>
     <div class="article-content">
-      <p>We use a BERT-style masked language model to learn ICD embeddings. The model takes a patient's claim history as a sequence of up to 512 positions, masks 15% of ICD codes, and learns to predict them from surrounding clinical context. This forces the model to learn meaningful relationships between diagnoses, procedures, costs, and patient characteristics.</p>
+      <p>We use a BERT-style masked language model to learn ICD embeddings. The model takes a patient's claim history as a sequence of up to 512 positions, masks 15% of ICD codes, and learns to predict them from surrounding clinical context.</p>
 
       <h3>Model Architecture</h3>
       <p>Hover over any component to explore what it does and how many parameters it contributes.</p>
 
-      <div class="arch-container">
+      <!-- D3 Architecture Diagram -->
+      <svg class="arch-svg" id="arch-svg" viewBox="0 0 700 660" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" class="arrow-head"/>
+          </marker>
+        </defs>
+      </svg>
 
-        <!-- Input Features -->
-        <div class="arch-section-label">Input Features &middot; 299 dims per position</div>
-        <div class="arch-features">
-          <div class="arch-feature" data-component="icd">
-            <div class="arch-feature-name">ICD Code</div>
-            <div class="arch-feature-dim">128</div>
-          </div>
-          <div class="arch-feature" data-component="procedure">
-            <div class="arch-feature-name">Procedure</div>
-            <div class="arch-feature-dim">64</div>
-          </div>
-          <div class="arch-feature" data-component="specialty">
-            <div class="arch-feature-name">Specialty</div>
-            <div class="arch-feature-dim">16</div>
-          </div>
-          <div class="arch-feature" data-component="pos">
-            <div class="arch-feature-name">Place of Service</div>
-            <div class="arch-feature-dim">8</div>
-          </div>
-          <div class="arch-feature" data-component="amounts">
-            <div class="arch-feature-name">Amounts</div>
-            <div class="arch-feature-dim">16</div>
-          </div>
-          <div class="arch-feature" data-component="time">
-            <div class="arch-feature-name">Time</div>
-            <div class="arch-feature-dim">32</div>
-          </div>
-          <div class="arch-feature" data-component="zip">
-            <div class="arch-feature-name">Zip Region</div>
-            <div class="arch-feature-dim">16</div>
-          </div>
-          <div class="arch-feature" data-component="age">
-            <div class="arch-feature-name">Age</div>
-            <div class="arch-feature-dim">1</div>
-          </div>
-          <div class="arch-feature" data-component="gender">
-            <div class="arch-feature-name">Gender</div>
-            <div class="arch-feature-dim">2</div>
-          </div>
-          <div class="arch-feature" data-component="labs">
-            <div class="arch-feature-name">Lab Values</div>
-            <div class="arch-feature-dim">16</div>
-          </div>
+      <!-- Info Panel -->
+      <div class="arch-info" id="arch-info">
+        <div class="arch-info-name" id="info-name">Model Overview</div>
+        <div class="arch-info-detail" id="info-detail">
+          A 29.9M parameter transformer that reads a patient's claim history and learns to predict masked ICD diagnosis codes from surrounding context. Each position in the sequence combines 10 input features into a 299-dimensional vector.
         </div>
+        <div class="arch-info-params" id="info-params">29.9M total parameters</div>
+      </div>
 
-        <div class="arch-merge"></div>
-        <div class="arch-arrow"></div>
-
-        <!-- Input Projection -->
-        <div class="arch-block" data-component="projection">
-          <div class="arch-block-title">Input Projection</div>
-          <div class="arch-block-sub">299 &rarr; 480</div>
+      <!-- Parameter Bar -->
+      <div class="param-bar-container">
+        <div class="param-bar-label">
+          <span>Parameter Distribution</span>
+          <span>29.9M parameters</span>
         </div>
-
-        <div class="arch-arrow"></div>
-
-        <!-- Transformer Encoder -->
-        <div class="arch-block arch-block-large" data-component="transformer">
-          <div class="arch-block-title">Transformer Encoder</div>
-          <div class="arch-block-sub">7 layers &middot; 6 heads &middot; 80 dims/head</div>
+        <div class="param-bar" id="param-bar">
+          <div class="param-segment" data-group="embeddings" style="width:9.4%;background:#4a7fb5;"></div>
+          <div class="param-segment" data-group="continuous" style="width:0.3%;background:#5a9a6a;"></div>
+          <div class="param-segment" data-group="projection" style="width:0.5%;background:#7a8a5a;"></div>
+          <div class="param-segment" data-group="transformer" style="width:64.9%;background:#8a5a6a;"></div>
+          <div class="param-segment" data-group="mlm" style="width:24.9%;background:#7a6a9a;"></div>
         </div>
-
-        <div class="arch-arrow"></div>
-
-        <!-- MLM Head -->
-        <div class="arch-block" data-component="mlm">
-          <div class="arch-block-title">MLM Head</div>
-          <div class="arch-block-sub">480 &rarr; 15,210</div>
+        <div class="param-bar-legend">
+          <div class="param-legend-item"><div class="param-legend-swatch" style="background:#4a7fb5;"></div> Embeddings</div>
+          <div class="param-legend-item"><div class="param-legend-swatch" style="background:#5a9a6a;"></div> Continuous</div>
+          <div class="param-legend-item"><div class="param-legend-swatch" style="background:#7a8a5a;"></div> Projection</div>
+          <div class="param-legend-item"><div class="param-legend-swatch" style="background:#8a5a6a;"></div> Transformer</div>
+          <div class="param-legend-item"><div class="param-legend-swatch" style="background:#7a6a9a;"></div> MLM Head</div>
         </div>
-
-        <!-- Info Panel -->
-        <div class="arch-info" id="arch-info">
-          <div class="arch-info-name" id="info-name">Model Overview</div>
-          <div class="arch-info-detail" id="info-detail">
-            A 29.9M parameter transformer that reads a patient's claim history and learns to predict masked ICD diagnosis codes from surrounding context. Each position in the sequence combines 10 input features into a 299-dimensional vector.
-          </div>
-          <div class="arch-info-params" id="info-params">29.9M total parameters</div>
-        </div>
-
-        <!-- Parameter Bar -->
-        <div class="param-bar-container">
-          <div class="param-bar-label">
-            <span>Parameter Distribution</span>
-            <span id="param-total">29.9M parameters</span>
-          </div>
-          <div class="param-bar" id="param-bar">
-            <div class="param-segment" data-group="embeddings" style="width:9.4%;background:#4a7fb5;" title="Embeddings"></div>
-            <div class="param-segment" data-group="continuous" style="width:0.3%;background:#5a9a6a;" title="Continuous Encoders"></div>
-            <div class="param-segment" data-group="projection" style="width:0.5%;background:#7a8a5a;" title="Input Projection"></div>
-            <div class="param-segment" data-group="transformer" style="width:64.9%;background:#8a5a6a;" title="Transformer Encoder"></div>
-            <div class="param-segment" data-group="mlm" style="width:24.9%;background:#7a6a9a;" title="MLM Head"></div>
-          </div>
-          <div class="param-bar-legend">
-            <div class="param-legend-item"><div class="param-legend-swatch" style="background:#4a7fb5;"></div> Embeddings</div>
-            <div class="param-legend-item"><div class="param-legend-swatch" style="background:#5a9a6a;"></div> Continuous</div>
-            <div class="param-legend-item"><div class="param-legend-swatch" style="background:#7a8a5a;"></div> Projection</div>
-            <div class="param-legend-item"><div class="param-legend-swatch" style="background:#8a5a6a;"></div> Transformer</div>
-            <div class="param-legend-item"><div class="param-legend-swatch" style="background:#7a6a9a;"></div> MLM Head</div>
-          </div>
-        </div>
-
       </div>
     </div>
   </section>
 
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <script>
-    const components = {
-      icd: {
-        name: "ICD Diagnosis Code",
-        group: "embeddings",
-        detail: "Each ICD code maps to a 128-dimensional learned embedding.<br><br>Encoding: <code>Embedding(15,210 × 128)</code><br>Vocabulary: 2,237 diagnosis codes + 3 special tokens (PAD, MASK, UNK)<br>Output: 128 dims",
-        params: "1.95M parameters"
-      },
-      procedure: {
-        name: "Procedure Code",
-        group: "embeddings",
-        detail: "CPT/HCPCS procedure codes embedded into a 64-dimensional space.<br><br>Encoding: <code>Embedding(12,871 × 64)</code><br>Vocabulary: 1,527 procedure codes<br>Output: 64 dims",
-        params: "824K parameters"
-      },
-      specialty: {
-        name: "Provider Specialty",
-        group: "embeddings",
-        detail: "The specialty of the provider on the claim (e.g., cardiology, orthopedics).<br><br>Encoding: <code>Embedding(565 × 16)</code><br>Vocabulary: 565 specialty codes<br>Output: 16 dims",
-        params: "9K parameters"
-      },
-      pos: {
-        name: "Place of Service",
-        group: "embeddings",
-        detail: "Where the service was performed (e.g., office, inpatient, ER).<br><br>Encoding: <code>Embedding(9 × 8)</code><br>Vocabulary: 9 place-of-service codes<br>Output: 8 dims",
-        params: "72 parameters"
-      },
-      amounts: {
-        name: "Amounts (Allowed, Paid)",
-        group: "continuous",
-        detail: "Dollar amounts are transformed with <code>sign(x) · log1p(|x|)</code> to handle the wide range of costs, then projected through a linear layer with normalization.<br><br>Encoding: <code>Linear(2, 16) → LayerNorm</code><br>Input: 2 values (allowed amount, paid amount)<br>Output: 16 dims",
-        params: "80 parameters"
-      },
-      time: {
-        name: "Days Since First Claim",
-        group: "continuous",
-        detail: "Temporal position in the patient's history, encoded using sinusoidal functions at 16 frequencies. This gives the model a sense of when events occurred relative to each other — no learned parameters needed.<br><br>Encoding: sinusoidal (16 frequencies)<br>Range: 0–3,650 days (~10 years)<br>Output: 32 dims",
-        params: "0 parameters (deterministic)"
-      },
-      zip: {
-        name: "Zip Region",
-        group: "embeddings",
-        detail: "Geographic signal from the first 3 digits of the patient's zip code. Captures regional variation in practice patterns and disease prevalence.<br><br>Encoding: <code>Embedding(1,000 × 16)</code><br>Vocabulary: 3-digit zip prefixes<br>Output: 16 dims",
-        params: "16K parameters"
-      },
-      age: {
-        name: "Age",
-        group: "continuous",
-        detail: "Patient age normalized to [0, 1] by dividing by 120. A single scalar — age is already a meaningful continuous signal that doesn't need a richer encoding.<br><br>Encoding: <code>age / 120</code><br>Range: 0–120 years<br>Output: 1 dim",
-        params: "0 parameters (deterministic)"
-      },
-      gender: {
-        name: "Gender",
-        group: "continuous",
-        detail: "One-hot encoded: Male = [1, 0], Female = [0, 1], Unknown = [0, 0]. Simple and effective — no need to learn an embedding for 3 categories.<br><br>Encoding: one-hot<br>Categories: M, F, U<br>Output: 2 dims",
-        params: "0 parameters (deterministic)"
-      },
-      labs: {
-        name: "Lab Values",
-        group: "continuous",
-        detail: "20 common lab results (LOINC features) projected into a 16-dimensional space. A learned missing-value embedding handles unobserved labs, blended in based on which values are present.<br><br>Encoding: <code>Linear(20, 16) → LayerNorm</code> + missing embedding blend<br>Input: 20 LOINC features<br>Output: 16 dims",
-        params: "~700 parameters"
-      },
-      projection: {
-        name: "Input Projection",
-        group: "projection",
-        detail: "A linear layer that projects the concatenated 299-dimensional input vector up to the transformer's hidden dimension of 480.<br><br><code>Linear(299, 480)</code>",
-        params: "144K parameters"
-      },
-      transformer: {
-        name: "Transformer Encoder",
-        group: "transformer",
-        detail: "7 identical layers, each with pre-norm architecture:<br><br>• <code>LayerNorm → Multi-Head Attention (6 heads, 80 dims/head)</code><br>• <code>LayerNorm → FFN: Linear(480, 1920) → GELU → Linear(1920, 480)</code><br>• <code>Dropout(0.1)</code><br><br>The bulk of the model's capacity. Attention lets each claim attend to every other claim in the patient's history, learning which diagnoses, procedures, and contexts are predictive of masked ICD codes.",
-        params: "~19.4M parameters (64.9% of model)"
-      },
-      mlm: {
-        name: "MLM Head",
-        group: "mlm",
-        detail: "Maps the transformer's hidden representations back to ICD code predictions over the full embedding vocabulary.<br><br><code>Linear(480, 480) → GELU → LayerNorm → Linear(480, 15,210)</code><br><br>Trained with cross-entropy loss. During training, 15% of unique ICD codes in each sequence are masked (all occurrences), and the model predicts them from context.",
-        params: "~7.5M parameters"
-      }
+    // ── Color palette by group ────────────────────────────────
+    const palette = {
+      embeddings:  { fill: '#1a3055', stroke: '#4a7fb5' },
+      continuous:  { fill: '#1a3520', stroke: '#5a9a6a' },
+      projection:  { fill: '#2a2a1a', stroke: '#7a8a5a' },
+      transformer: { fill: '#2a1a1a', stroke: '#8a5a6a' },
+      mlm:         { fill: '#1a1a2a', stroke: '#7a6a9a' },
+    };
+
+    // ── Component info (for hover panel) ──────────────────────
+    const info = {
+      icd:        { name: "ICD Diagnosis Code", group: "embeddings", detail: "Each ICD code maps to a 128-dimensional learned embedding.<br><br>Encoding: <code>Embedding(15,210 × 128)</code><br>Vocabulary: 2,237 diagnosis codes + 3 special tokens (PAD, MASK, UNK)<br>Output: 128 dims", params: "1.95M parameters" },
+      procedure:  { name: "Procedure Code", group: "embeddings", detail: "CPT/HCPCS procedure codes embedded into a 64-dimensional space.<br><br>Encoding: <code>Embedding(12,871 × 64)</code><br>Vocabulary: 1,527 procedure codes<br>Output: 64 dims", params: "824K parameters" },
+      specialty:  { name: "Provider Specialty", group: "embeddings", detail: "The specialty of the provider on the claim (e.g., cardiology, orthopedics).<br><br>Encoding: <code>Embedding(565 × 16)</code><br>Vocabulary: 565 specialty codes<br>Output: 16 dims", params: "9K parameters" },
+      pos:        { name: "Place of Service", group: "embeddings", detail: "Where the service was performed (e.g., office, inpatient, ER).<br><br>Encoding: <code>Embedding(9 × 8)</code><br>Vocabulary: 9 place-of-service codes<br>Output: 8 dims", params: "72 parameters" },
+      amounts:    { name: "Amounts (Allowed, Paid)", group: "continuous", detail: "Dollar amounts transformed with <code>sign(x) · log1p(|x|)</code> then projected through a linear layer with normalization.<br><br>Encoding: <code>Linear(2, 16) → LayerNorm</code><br>Input: 2 values (allowed, paid)<br>Output: 16 dims", params: "80 parameters" },
+      time:       { name: "Days Since First Claim", group: "continuous", detail: "Temporal position encoded using sinusoidal functions at 16 frequencies. Gives the model a sense of when events occurred — no learned parameters.<br><br>Encoding: sinusoidal (16 frequencies)<br>Range: 0–3,650 days (~10 years)<br>Output: 32 dims", params: "0 parameters (deterministic)" },
+      zip:        { name: "Zip Region", group: "embeddings", detail: "Geographic signal from the first 3 digits of the patient's zip code. Captures regional variation in practice patterns and disease prevalence.<br><br>Encoding: <code>Embedding(1,000 × 16)</code><br>Vocabulary: 3-digit zip prefixes<br>Output: 16 dims", params: "16K parameters" },
+      age:        { name: "Age", group: "continuous", detail: "Patient age normalized to [0, 1] by dividing by 120. A single scalar — age is already a meaningful continuous signal.<br><br>Encoding: <code>age / 120</code><br>Range: 0–120 years<br>Output: 1 dim", params: "0 parameters (deterministic)" },
+      gender:     { name: "Gender", group: "continuous", detail: "One-hot encoded: Male = [1, 0], Female = [0, 1], Unknown = [0, 0].<br><br>Encoding: one-hot<br>Categories: M, F, U<br>Output: 2 dims", params: "0 parameters (deterministic)" },
+      labs:       { name: "Lab Values", group: "continuous", detail: "20 common lab results (LOINC features) projected into a 16-dimensional space. A learned missing-value embedding handles unobserved labs.<br><br>Encoding: <code>Linear(20, 16) → LayerNorm</code> + missing embedding blend<br>Input: 20 LOINC features<br>Output: 16 dims", params: "~700 parameters" },
+      concat:     { name: "Concatenation", group: "projection", detail: "All 10 input features concatenated into a single 299-dimensional vector per sequence position.<br><br>128 + 64 + 16 + 8 + 16 + 32 + 16 + 1 + 2 + 16 = <code>299 dims</code>", params: "0 parameters" },
+      projection: { name: "Input Projection", group: "projection", detail: "A linear layer that projects the concatenated 299-dimensional input up to the transformer's hidden dimension of 480.<br><br><code>Linear(299, 480)</code>", params: "144K parameters" },
+      transformer:{ name: "Transformer Encoder", group: "transformer", detail: "7 identical layers, each with pre-norm architecture:<br><br>• <code>LayerNorm → Multi-Head Attention (6 heads, 80 dims/head)</code><br>• <code>LayerNorm → FFN: Linear(480, 1920) → GELU → Linear(1920, 480)</code><br>• <code>Dropout(0.1)</code><br><br>Attention lets each claim attend to every other claim in the patient's history, learning which diagnoses, procedures, and contexts predict masked ICD codes.", params: "~19.4M parameters (64.9% of model)" },
+      mlm:        { name: "MLM Head", group: "mlm", detail: "Maps transformer hidden states back to ICD predictions over the full embedding vocabulary.<br><br><code>Linear(480, 480) → GELU → LayerNorm → Linear(480, 15,210)</code><br><br>Trained with cross-entropy loss. 15% of unique ICD codes per sequence are masked (all occurrences), and the model predicts them from context.", params: "~7.5M parameters" },
+      loss:       { name: "Training Objective", group: "mlm", detail: "Cross-entropy loss over the 15,210-class vocabulary, computed only at masked positions. All occurrences of each selected code are masked together, forcing the model to use surrounding context rather than copying.", params: "" },
     };
 
     const defaultInfo = {
@@ -477,32 +226,243 @@
       params: "29.9M total parameters"
     };
 
-    const infoName = document.getElementById('info-name');
+    // ── Feature data ──────────────────────────────────────────
+    const features = [
+      { id: 'icd',       name: 'ICD Code',      dim: '128', group: 'embeddings',  col: 0, row: 0 },
+      { id: 'procedure', name: 'Procedure',      dim: '64',  group: 'embeddings',  col: 1, row: 0 },
+      { id: 'specialty', name: 'Specialty',       dim: '16',  group: 'embeddings',  col: 2, row: 0 },
+      { id: 'pos',       name: 'Place of Svc',   dim: '8',   group: 'embeddings',  col: 3, row: 0 },
+      { id: 'amounts',   name: 'Amounts',         dim: '16',  group: 'continuous',  col: 4, row: 0 },
+      { id: 'time',      name: 'Time',            dim: '32',  group: 'continuous',  col: 0, row: 1 },
+      { id: 'zip',       name: 'Zip Region',      dim: '16',  group: 'embeddings',  col: 1, row: 1 },
+      { id: 'age',       name: 'Age',             dim: '1',   group: 'continuous',  col: 2, row: 1 },
+      { id: 'gender',    name: 'Gender',           dim: '2',   group: 'continuous',  col: 3, row: 1 },
+      { id: 'labs',      name: 'Lab Values',      dim: '16',  group: 'continuous',  col: 4, row: 1 },
+    ];
+
+    // ── Layout constants ──────────────────────────────────────
+    const W = 700;
+    const nodeW = 112, nodeH = 46, rx = 6;
+    const colSpace = 130;
+    const gridLeft = (W - 5 * nodeW - 4 * (colSpace - nodeW)) / 2;
+    const row0Y = 44, row1Y = row0Y + 62;
+    const cx = W / 2;
+
+    function fx(col) { return gridLeft + col * colSpace; }
+    function fcx(col) { return fx(col) + nodeW / 2; }
+
+    // Vertical positions for the flow
+    const concatY   = row1Y + nodeH + 24;
+    const concatH   = 22;
+    const concatL   = fx(0);
+    const concatW   = fx(4) + nodeW - fx(0);
+    const projY     = concatY + concatH + 36;
+    const projW     = 220, projH = 46;
+    const transY    = projY + projH + 36;
+    const transW    = 300, transH = 170;
+    const mlmY      = transY + transH + 36;
+    const mlmW      = 220, mlmH = 46;
+    const lossY     = mlmY + mlmH + 34;
+
+    // ── Draw with D3 ──────────────────────────────────────────
+    const svg = d3.select('#arch-svg');
+
+    // Section label
+    svg.append('text')
+      .attr('x', cx).attr('y', row0Y - 14)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#9a9ab0').attr('font-size', 11)
+      .attr('letter-spacing', '0.5px')
+      .text('INPUT FEATURES · 299 dims per position');
+
+    // ── Connection lines: each feature → concat bar ───────────
+    features.forEach(f => {
+      const x = fcx(f.col);
+      const y1 = (f.row === 0 ? row0Y : row1Y) + nodeH;
+      svg.append('line')
+        .attr('class', 'conn-line')
+        .attr('x1', x).attr('y1', y1)
+        .attr('x2', x).attr('y2', concatY);
+    });
+
+    // ── Feature nodes ─────────────────────────────────────────
+    features.forEach(f => {
+      const x = fx(f.col);
+      const y = f.row === 0 ? row0Y : row1Y;
+      const c = palette[f.group];
+
+      const g = svg.append('g')
+        .attr('class', 'arch-node')
+        .attr('data-component', f.id)
+        .attr('transform', `translate(${x},${y})`);
+
+      g.append('rect')
+        .attr('width', nodeW).attr('height', nodeH).attr('rx', rx)
+        .attr('fill', c.fill).attr('stroke', c.stroke).attr('stroke-width', 1.5);
+
+      g.append('text')
+        .attr('x', nodeW / 2).attr('y', 19)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#e0e0e0').attr('font-size', 11)
+        .text(f.name);
+
+      g.append('text')
+        .attr('x', nodeW / 2).attr('y', 35)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#6fa3ef').attr('font-size', 10)
+        .attr('font-family', "'SF Mono','Fira Code',monospace")
+        .text(f.dim);
+    });
+
+    // ── Concat bar ────────────────────────────────────────────
+    const cg = svg.append('g')
+      .attr('class', 'arch-node')
+      .attr('data-component', 'concat')
+      .attr('transform', `translate(${concatL},${concatY})`);
+
+    cg.append('rect')
+      .attr('width', concatW).attr('height', concatH).attr('rx', 4)
+      .attr('fill', palette.projection.fill)
+      .attr('stroke', palette.projection.stroke)
+      .attr('stroke-width', 1.5);
+
+    cg.append('text')
+      .attr('x', concatW / 2).attr('y', 15)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#9a9ab0').attr('font-size', 11)
+      .text('concat → 299');
+
+    // ── Arrows & blocks helper ────────────────────────────────
+    function arrow(x1, y1, x2, y2) {
+      svg.append('line')
+        .attr('class', 'arrow-line')
+        .attr('x1', x1).attr('y1', y1 + 4)
+        .attr('x2', x2).attr('y2', y2 - 8)
+        .attr('marker-end', 'url(#arrowhead)');
+    }
+
+    function block(id, x, y, w, h, title, sub, group) {
+      const c = palette[group];
+      const g = svg.append('g')
+        .attr('class', 'arch-node')
+        .attr('data-component', id)
+        .attr('transform', `translate(${x},${y})`);
+
+      g.append('rect')
+        .attr('width', w).attr('height', h).attr('rx', 8)
+        .attr('fill', c.fill).attr('stroke', c.stroke).attr('stroke-width', 1.5);
+
+      g.append('text')
+        .attr('x', w / 2).attr('y', 20)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#e0e0e0').attr('font-size', 12).attr('font-weight', 600)
+        .text(title);
+
+      g.append('text')
+        .attr('x', w / 2).attr('y', 36)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#6fa3ef').attr('font-size', 10)
+        .attr('font-family', "'SF Mono','Fira Code',monospace")
+        .text(sub);
+
+      return g;
+    }
+
+    function dimLabel(x, y, text) {
+      svg.append('text')
+        .attr('x', x).attr('y', y)
+        .attr('text-anchor', 'start')
+        .attr('class', 'dim-label')
+        .text(text);
+    }
+
+    // ── Concat → Projection ──────────────────────────────────
+    arrow(cx, concatY + concatH, cx, projY);
+    block('projection', cx - projW / 2, projY, projW, projH, 'Input Projection', '299 → 480', 'projection');
+
+    // ── Projection → Transformer ──────────────────────────────
+    arrow(cx, projY + projH, cx, transY);
+    dimLabel(cx + 12, projY + projH + 22, '480');
+
+    // ── Transformer Encoder ───────────────────────────────────
+    const tc = palette.transformer;
+    const tg = svg.append('g')
+      .attr('class', 'arch-node')
+      .attr('data-component', 'transformer')
+      .attr('transform', `translate(${cx - transW / 2},${transY})`);
+
+    tg.append('rect')
+      .attr('width', transW).attr('height', transH).attr('rx', 8)
+      .attr('fill', tc.fill).attr('stroke', tc.stroke).attr('stroke-width', 1.5);
+
+    tg.append('text')
+      .attr('x', transW / 2).attr('y', 18)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#e0e0e0').attr('font-size', 12).attr('font-weight', 600)
+      .text('Transformer Encoder × 7');
+
+    // Draw 7 internal layer rects
+    const lPad = 12, lTop = 28, lGap = 3;
+    const lH = (transH - lTop - lPad - 6 * lGap) / 7;
+    for (let i = 0; i < 7; i++) {
+      const ly = lTop + i * (lH + lGap);
+      tg.append('rect')
+        .attr('x', lPad).attr('y', ly)
+        .attr('width', transW - 2 * lPad).attr('height', lH)
+        .attr('rx', 3)
+        .attr('fill', 'rgba(138, 90, 106, 0.12)')
+        .attr('stroke', 'rgba(138, 90, 106, 0.25)')
+        .attr('stroke-width', 0.5);
+
+      tg.append('text')
+        .attr('x', transW / 2).attr('y', ly + lH / 2 + 3.5)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#9a9ab0').attr('font-size', 9)
+        .text(i === 0 ? 'LN → MHA(6h, 80d) → LN → FFN(1920) → Drop' : `Layer ${i + 1}`);
+    }
+
+    // ── Transformer → MLM Head ────────────────────────────────
+    arrow(cx, transY + transH, cx, mlmY);
+    dimLabel(cx + 12, transY + transH + 22, '480');
+
+    // ── MLM Head ──────────────────────────────────────────────
+    block('mlm', cx - mlmW / 2, mlmY, mlmW, mlmH, 'MLM Head', '480 → 15,210', 'mlm');
+
+    // ── MLM → Loss ────────────────────────────────────────────
+    arrow(cx, mlmY + mlmH, cx, lossY - 4);
+
+    const lg = svg.append('g')
+      .attr('class', 'arch-node')
+      .attr('data-component', 'loss');
+
+    lg.append('text')
+      .attr('x', cx).attr('y', lossY + 10)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#9a9ab0').attr('font-size', 12)
+      .attr('font-style', 'italic')
+      .text('Cross-Entropy Loss');
+
+    // ── Hover interactivity ───────────────────────────────────
+    const infoName   = document.getElementById('info-name');
     const infoDetail = document.getElementById('info-detail');
     const infoParams = document.getElementById('info-params');
-    const infoPanel = document.getElementById('arch-info');
-    const segments = document.querySelectorAll('.param-segment');
+    const infoPanel  = document.getElementById('arch-info');
+    const segments   = document.querySelectorAll('.param-segment');
 
     function showInfo(key) {
-      const c = key ? components[key] : defaultInfo;
+      const c = key && info[key] ? info[key] : defaultInfo;
       infoName.textContent = c.name;
       infoDetail.innerHTML = c.detail;
       infoParams.textContent = c.params;
       infoPanel.classList.toggle('active', !!key);
 
-      // Highlight param bar segment
-      if (key && components[key]) {
-        const group = components[key].group;
-        segments.forEach(s => {
-          s.classList.toggle('dimmed', s.dataset.group !== group);
-        });
-      } else {
-        segments.forEach(s => s.classList.remove('dimmed'));
-      }
+      const group = key && info[key] ? info[key].group : null;
+      segments.forEach(s => {
+        s.classList.toggle('dimmed', !!group && s.dataset.group !== group);
+      });
     }
 
-    // Bind hover events
-    document.querySelectorAll('[data-component]').forEach(el => {
+    document.querySelectorAll('.arch-node').forEach(el => {
       el.addEventListener('mouseenter', () => showInfo(el.dataset.component));
       el.addEventListener('mouseleave', () => showInfo(null));
     });
