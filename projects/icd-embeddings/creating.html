@@ -95,16 +95,16 @@
       mlm:         { fill: '#1a1a2a', stroke: '#7a6a9a' },
     };
     const info = {
-      icd:        { name: "ICD Diagnosis Code", group: "embeddings", detail: "Each ICD code maps to a 128-dimensional learned embedding.<br><br>Encoding: <code>Embedding(15,210 × 128)</code><br>Vocabulary: 15,210 codes (including PAD, MASK, UNK)<br>Output: 128 dims", params: "1.95M parameters" },
-      procedure:  { name: "Procedure Code", group: "embeddings", detail: "CPT/HCPCS procedure codes embedded into a 64-dimensional space.<br><br>Encoding: <code>Embedding(12,871 × 64)</code><br>Vocabulary: 12,871 codes<br>Output: 64 dims", params: "824K parameters" },
-      specialty:  { name: "Provider Specialty", group: "embeddings", detail: "Specialty of the provider on the claim.<br><br>Encoding: <code>Embedding(565 × 16)</code><br>Vocabulary: 565 codes<br>Output: 16 dims", params: "9K parameters" },
-      pos:        { name: "Place of Service", group: "embeddings", detail: "Where the service was performed.<br><br>Encoding: <code>Embedding(9 × 8)</code><br>Vocabulary: 9 codes<br>Output: 8 dims", params: "72 parameters" },
-      amounts:    { name: "Amounts (Allowed, Paid)", group: "continuous", detail: "Dollar amounts transformed with <code>sign(x) · log1p(|x|)</code> then projected.<br><br>Encoding: <code>Linear(2, 16) → LayerNorm</code><br>Output: 16 dims", params: "80 parameters" },
-      time:       { name: "Days Since First Claim", group: "continuous", detail: "Sinusoidal encoding at 16 frequencies.<br><br>Range: 0–3,650 days<br>Output: 32 dims", params: "0 parameters (deterministic)" },
-      zip:        { name: "Zip Region", group: "embeddings", detail: "First 3 digits of zip code.<br><br>Encoding: <code>Embedding(1,000 × 16)</code><br>Output: 16 dims", params: "16K parameters" },
-      age:        { name: "Age", group: "continuous", detail: "Normalized to [0, 1] by dividing by 120.<br><br>Output: 1 dim", params: "0 parameters (deterministic)" },
-      gender:     { name: "Gender", group: "continuous", detail: "One-hot: M=[1,0], F=[0,1], U=[0,0].<br><br>Output: 2 dims", params: "0 parameters (deterministic)" },
-      labs:       { name: "Lab Values", group: "continuous", detail: "20 LOINC features projected with missing-value embedding blend.<br><br>Encoding: <code>Linear(20, 16) → LayerNorm</code><br>Output: 16 dims", params: "~700 parameters" },
+      icd:        { name: "ICD Diagnosis Code", group: "embeddings", detail: "<em>Per-position</em> — the one unique feature at each slot.<br><br>Encoding: <code>Embedding(15,210 × 128)</code><br>Vocabulary: 15,210 codes (including PAD, MASK, UNK)<br>Shape: <code>(512, 128)</code>", params: "1.95M parameters" },
+      procedure:  { name: "Procedure Code", group: "embeddings", detail: "<em>Per-claim</em> — shared across all ICD codes from the same claim.<br><br>Encoding: <code>Embedding(12,871 × 64)</code><br>Vocabulary: 12,871 codes<br>Shape: <code>(512, 64)</code>", params: "824K parameters" },
+      specialty:  { name: "Provider Specialty", group: "embeddings", detail: "<em>Per-claim</em> — specialty of the provider on the claim.<br><br>Encoding: <code>Embedding(565 × 16)</code><br>Vocabulary: 565 codes<br>Shape: <code>(512, 16)</code>", params: "9K parameters" },
+      pos:        { name: "Place of Service", group: "embeddings", detail: "<em>Per-claim</em> — where the service was performed.<br><br>Encoding: <code>Embedding(9 × 8)</code><br>Vocabulary: 9 codes<br>Shape: <code>(512, 8)</code>", params: "72 parameters" },
+      amounts:    { name: "Amounts (Allowed, Paid)", group: "continuous", detail: "<em>Per-claim</em> — dollar amounts transformed with <code>sign(x) · log1p(|x|)</code> then projected.<br><br>Encoding: <code>Linear(2, 16) → LayerNorm</code><br>Shape: <code>(512, 16)</code>", params: "80 parameters" },
+      time:       { name: "Days Since First Claim", group: "continuous", detail: "<em>Per-claim</em> — sinusoidal encoding at 16 frequencies.<br><br>Range: 0–3,650 days<br>Shape: <code>(512, 32)</code>", params: "0 parameters (deterministic)" },
+      zip:        { name: "Zip Region", group: "embeddings", detail: "<em>Per-patient</em> — broadcast from <code>(1, 16)</code> to all 512 positions. The model sees the same zip embedding at every position.<br><br>Encoding: <code>Embedding(1,000 × 16)</code><br>Shape: <code>(512, 16)</code>", params: "16K parameters" },
+      age:        { name: "Age", group: "continuous", detail: "<em>Per-claim</em> — normalized to [0, 1] by dividing by 120. Age at time of each claim.<br><br>Shape: <code>(512, 1)</code>", params: "0 parameters (deterministic)" },
+      gender:     { name: "Gender", group: "continuous", detail: "<em>Per-patient</em> — broadcast from <code>(1, 2)</code> to all 512 positions. One-hot: M=[1,0], F=[0,1], U=[0,0].<br><br>Shape: <code>(512, 2)</code>", params: "0 parameters (deterministic)" },
+      labs:       { name: "Lab Values", group: "continuous", detail: "<em>Per-claim</em> — 20 LOINC features projected with missing-value embedding blend.<br><br>Encoding: <code>Linear(20, 16) → LayerNorm</code><br>Shape: <code>(512, 16)</code>", params: "~700 parameters" },
       concat:     { name: "Concatenation", group: "projection", detail: "All 10 features concatenated per position.<br><br>128+64+16+8+16+32+16+1+2+16 = <code>299 dims</code>", params: "0 parameters" },
       projection: { name: "Input Projection", group: "projection", detail: "Projects concatenated input to hidden dimension.<br><br><code>Linear(299, 480)</code>", params: "144K parameters" },
       mlm:        { name: "MLM Head", group: "mlm", detail: "Maps hidden states to ICD predictions.<br><br><code>Linear(480, 480) → GELU → LayerNorm → Linear(480, 15,210)</code><br><br>15% of unique ICD codes per sequence are masked (all occurrences).", params: "~7.5M parameters" },
@@ -225,7 +225,7 @@
       .attr('fill','#9a9ab0').attr('font-size',10).text('Overview');
     // Matrix visualization data: arrays of [rows,cols,label,type] or operator strings
     const mColors={idx:'#6fa3ef',in:'#4a7fb5',wt:'#8a5a6a',bias:'#5a9a6a',out:'#7a6a9a',emb:'#4a7fb5'};
-    function dimPx(d){if(typeof d==='string')return 38;if(d<=1)return 5;if(d<=8)return 10;if(d<=20)return 16;if(d<=64)return 24;if(d<=128)return 32;if(d<=300)return 40;if(d<=500)return 48;if(d<=2000)return 62;return 78;}
+    function dimPx(d){if(d<=1)return 5;if(d<=8)return 10;if(d<=20)return 16;if(d<=64)return 24;if(d<=128)return 32;if(d<=300)return 40;if(d<=500)return 48;if(d<=2000)return 62;return 78;}
     const mv={};
     mv.icd=[[1,1,'i','idx'],'→',[15210,128,'E_icd','emb'],'=',[1,128,'e','out']];
     mv.procedure=[[1,1,'i','idx'],'→',[12871,64,'E_proc','emb'],'=',[1,64,'e','out']];
@@ -237,17 +237,17 @@
     mv.age=['age/120','=',[1,1,'h','out']];
     mv.gender=['onehot(g)','=',[1,2,'h','out']];
     mv.labs=[[1,20,'x','in'],'×',[20,16,'W','wt'],'+',[1,16,'b','bias'],'=',[1,16,'h','out']];
-    mv.concat=[['S',128,'','in'],'⊕',['S',64,'','in'],'⊕','…','⊕',['S',16,'','in'],'=',['S',299,'X','out']];
-    mv.projection=[['S',299,'X','in'],'×',[299,480,'W','wt'],'+',['S',480,'b','bias'],'=',['S',480,'H','out']];
+    mv.concat=[[512,128,'','in'],'⊕',[512,64,'','in'],'⊕','…','⊕',[512,16,'','in'],'=',[512,299,'X','out']];
+    mv.projection=[[512,299,'X','in'],'×',[299,480,'W','wt'],'+',[512,480,'b','bias'],'=',[512,480,'H','out']];
     for(let i=1;i<=7;i++){
-      mv['ln_a_'+i]=[['S',480,'X','in'],'→',['S',480,'γ⊙x̂+β','wt'],'=',['S',480,'H','out']];
-      mv['attn_'+i]=[['S',480,'X','in'],'×',[480,1440,'W_QKV','wt'],'→',['S','S','QKᵀ/√80','wt'],'→','softmax·V','→',['S',480,'','in'],'×',[480,480,'W_O','wt'],'=',['S',480,'H','out']];
+      mv['ln_a_'+i]=[[512,480,'X','in'],'→',[512,480,'γ⊙x̂+β','wt'],'=',[512,480,'H','out']];
+      mv['attn_'+i]=[[512,480,'X','in'],'×',[480,1440,'W_QKV','wt'],'→',[512,512,'QKᵀ/√80','wt'],'→','softmax·V','→',[512,480,'','in'],'×',[480,480,'W_O','wt'],'=',[512,480,'H','out']];
       mv['ln_f_'+i]=mv['ln_a_'+i];
-      mv['up_'+i]=[['S',480,'X','in'],'×',[480,1920,'W_up','wt'],'+',['S',1920,'b','bias'],'→','GELU','=',['S',1920,'H','out']];
-      mv['down_'+i]=[['S',1920,'H','in'],'×',[1920,480,'W_dn','wt'],'+',['S',480,'b','bias'],'=',['S',480,'X','out']];
+      mv['up_'+i]=[[512,480,'X','in'],'×',[480,1920,'W_up','wt'],'+',[512,1920,'b','bias'],'→','GELU','=',[512,1920,'H','out']];
+      mv['down_'+i]=[[512,1920,'H','in'],'×',[1920,480,'W_dn','wt'],'+',[512,480,'b','bias'],'=',[512,480,'X','out']];
     }
     mv.ln_final=mv.ln_a_1;
-    mv.mlm=[['S',480,'H','in'],'×',[480,480,'W₁','wt'],'→','GELU→LN','→',['S',480,'','in'],'×',[480,15210,'W₂','wt'],'=',['S',15210,'logits','out']];
+    mv.mlm=[[512,480,'H','in'],'×',[480,480,'W₁','wt'],'→','GELU→LN','→',[512,480,'','in'],'×',[480,15210,'W₂','wt'],'=',[512,15210,'logits','out']];
     mv.loss=['-log( softmax(logits)[ y ] )'];
     mv.overview=[];
     const mathSvg=d3.select('#info-math');
@@ -266,7 +266,7 @@
           const h=dimPx(r),w=dimPx(c),col=mColors[type]||'#555';
           if(label)mathSvg.append('text').attr('x',x+w/2).attr('y',cy-h/2-4).attr('text-anchor','middle').attr('fill','#9a9ab0').attr('font-size',9).attr('font-family',"'SF Mono','Fira Code',monospace").text(label);
           mathSvg.append('rect').attr('x',x).attr('y',cy-h/2).attr('width',w).attr('height',h).attr('fill',col).attr('fill-opacity',0.25).attr('stroke',col).attr('stroke-width',1).attr('rx',2);
-          const dim=(r===1&&c===1)?'1':(typeof r==='string'||typeof c==='string')?r+'×'+c:r+'×'+c;
+          const dim=(r===1&&c===1)?'1':r+'×'+c;
           mathSvg.append('text').attr('x',x+w/2).attr('y',cy+h/2+11).attr('text-anchor','middle').attr('fill','#666').attr('font-size',7.5).attr('font-family',"'SF Mono','Fira Code',monospace").text(dim);
           x+=w+8;
         }
