@@ -110,16 +110,25 @@
       overview:   { name: "Model Overview", group: null, detail: "A 29.9M parameter transformer that reads a patient's claim history and learns to predict masked ICD diagnosis codes from surrounding context. Each position in the sequence combines 10 input features into a 299-dimensional vector.", params: "29.9M total parameters" },
     };
     for (let i = 1; i <= 7; i++) {
+      info['ln_a_'+i] = { name: 'Layer '+i+': Pre-Attention LayerNorm', group: 'transformer',
+        detail: 'Normalizes hidden states before self-attention in layer '+i+' of 7.<br><br><code>LayerNorm(480)</code><br><br>• Scale (γ): 480 parameters<br>• Bias (β): 480 parameters',
+        params: '960 parameters' };
       info['attn_'+i] = { name: 'Layer '+i+': Multi-Head Attention', group: 'transformer',
-        detail: 'Pre-norm self-attention in layer '+i+' of 7.<br><br><code>LayerNorm(480) → MultiHead(Q, K, V)</code> + residual<br><br>• 6 heads, 80 dims/head<br>• Q/K/V projections: 3 × (480×480 + 480) = 692,640<br>• Output projection: 480×480 + 480 = 230,880<br>• LayerNorm: 960',
-        params: '~924K parameters' };
+        detail: 'Self-attention in layer '+i+' of 7, with residual connection.<br><br><code>MultiHead(Q, K, V)</code> + residual<br><br>• 6 heads, 80 dims/head<br>• Q/K/V projections: 3 × (480×480 + 480) = 692,640<br>• Output projection: 480×480 + 480 = 230,880',
+        params: '~923K parameters' };
+      info['ln_f_'+i] = { name: 'Layer '+i+': Pre-FFN LayerNorm', group: 'transformer',
+        detail: 'Normalizes hidden states before the feed-forward network in layer '+i+' of 7.<br><br><code>LayerNorm(480)</code><br><br>• Scale (γ): 480 parameters<br>• Bias (β): 480 parameters',
+        params: '960 parameters' };
       info['up_'+i] = { name: 'Layer '+i+': FFN Up-Projection', group: 'transformer',
-        detail: 'Expands hidden dim by 4× in layer '+i+' of 7.<br><br><code>LayerNorm(480) → Linear(480, 1920) → GELU</code><br><br>• Weight: 480 × 1920 = 921,600<br>• Bias: 1,920<br>• LayerNorm: 960',
+        detail: 'Expands hidden dim by 4× in layer '+i+' of 7.<br><br><code>Linear(480, 1920) → GELU</code><br><br>• Weight: 480 × 1920 = 921,600<br>• Bias: 1,920',
         params: '~924K parameters' };
       info['down_'+i] = { name: 'Layer '+i+': FFN Down-Projection', group: 'transformer',
         detail: 'Compresses back to hidden dim in layer '+i+' of 7, with residual connection.<br><br><code>Linear(1920, 480) → Dropout(0.1)</code> + residual<br><br>• Weight: 1920 × 480 = 921,600<br>• Bias: 480',
         params: '~922K parameters' };
     }
+    info['ln_final'] = { name: 'Final LayerNorm', group: 'transformer',
+      detail: 'Final normalization after all 7 transformer layers, before the MLM head.<br><br><code>LayerNorm(480)</code><br><br>• Scale (γ): 480 parameters<br>• Bias (β): 480 parameters',
+      params: '960 parameters' };
     const features = [
       { id: 'icd', name: 'ICD Code', dim: '128', group: 'embeddings' },
       { id: 'procedure', name: 'Procedure', dim: '64', group: 'embeddings' },
@@ -134,19 +143,22 @@
     ];
     const fRX=52, fRY=15, fCX=68, fSp=34, fSY=22;
     const fPos = features.map((f,i)=>({...f, cx:fCX, cy:fSY+i*fSp}));
-    const midY = fSY + 4.5*fSp;
+    const midY = fSY + 2*fSp;
     const pipeline = [
       { id:'concat', label:'Concat', sub:'299', group:'projection', rx:36, ry:18 },
       { id:'projection', label:'Projection', sub:'299→480', group:'projection', rx:50, ry:20 },
     ];
     for (let i=1;i<=7;i++) {
-      pipeline.push({ id:'attn_'+i, label:'Attn '+i, sub:'6h·80d', group:'transformer', rx:26, ry:14, layer:i, isAttn:true });
-      pipeline.push({ id:'up_'+i, label:'Up '+i, sub:'480→1920', group:'transformer', rx:26, ry:14, layer:i });
-      pipeline.push({ id:'down_'+i, label:'Down '+i, sub:'1920→480', group:'transformer', rx:26, ry:14, layer:i });
+      pipeline.push({ id:'ln_a_'+i, label:'LN', sub:'480', group:'transformer', rx:16, ry:12, layer:i, isLayerStart:true });
+      pipeline.push({ id:'attn_'+i, label:'Attn '+i, sub:'6h·80d', group:'transformer', rx:28, ry:14, layer:i });
+      pipeline.push({ id:'ln_f_'+i, label:'LN', sub:'480', group:'transformer', rx:16, ry:12, layer:i });
+      pipeline.push({ id:'up_'+i, label:'Up '+i, sub:'480→1920', group:'transformer', rx:28, ry:14, layer:i });
+      pipeline.push({ id:'down_'+i, label:'Down '+i, sub:'1920→480', group:'transformer', rx:28, ry:14, layer:i });
     }
+    pipeline.push({ id:'ln_final', label:'LN', sub:'480', group:'transformer', rx:16, ry:12 });
     pipeline.push({ id:'mlm', label:'MLM Head', sub:'480→15,210', group:'mlm', rx:52, ry:20 });
     pipeline.push({ id:'loss', label:'CE Loss', sub:'', group:'mlm', rx:34, ry:18 });
-    const maxX=680, gap=14, rowH=58, wrapX=170;
+    const maxX=680, gap=10, rowH=52, wrapX=170;
     let cx=210-pipeline[0].rx, cr=0;
     pipeline.forEach((n,i)=>{
       if(cx+2*n.rx>maxX && i>0){ cr++; cx=wrapX; }
@@ -199,7 +211,7 @@
         g.append('text').attr('x',n.cx).attr('y',n.cy+4).attr('text-anchor','middle')
           .attr('fill','#e0e0e0').attr('font-size',9).attr('font-weight',600).text(n.label);
       }
-      if(n.isAttn){
+      if(n.isLayerStart){
         svg.append('text').attr('x',n.cx).attr('y',n.cy-n.ry-5)
           .attr('text-anchor','middle').attr('fill','#8a5a6a').attr('font-size',8).text('L'+n.layer);
       }
