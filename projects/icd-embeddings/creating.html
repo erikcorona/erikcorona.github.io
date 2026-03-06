@@ -136,7 +136,7 @@
       <h3>Model Architecture</h3>
       <p>Hover over any component to explore what it does and how many parameters it contributes.</p>
 
-      <svg class="arch-svg" id="arch-svg" viewBox="0 0 940 370" xmlns="http://www.w3.org/2000/svg">
+      <svg class="arch-svg" id="arch-svg" viewBox="0 0 1020 370" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="glow">
             <feGaussianBlur stdDeviation="4" result="blur"/>
@@ -197,8 +197,8 @@
 
     // ── Component info ────────────────────────────────────────
     const info = {
-      icd:        { name: "ICD Diagnosis Code", group: "embeddings", detail: "Each ICD code maps to a 128-dimensional learned embedding.<br><br>Encoding: <code>Embedding(15,210 × 128)</code><br>Vocabulary: 2,237 diagnosis codes + 3 special tokens (PAD, MASK, UNK)<br>Output: 128 dims", params: "1.95M parameters" },
-      procedure:  { name: "Procedure Code", group: "embeddings", detail: "CPT/HCPCS procedure codes embedded into a 64-dimensional space.<br><br>Encoding: <code>Embedding(12,871 × 64)</code><br>Vocabulary: 1,527 procedure codes<br>Output: 64 dims", params: "824K parameters" },
+      icd:        { name: "ICD Diagnosis Code", group: "embeddings", detail: "Each ICD code maps to a 128-dimensional learned embedding.<br><br>Encoding: <code>Embedding(15,210 × 128)</code><br>Vocabulary: 15,210 codes (including special tokens: PAD, MASK, UNK)<br>Output: 128 dims", params: "1.95M parameters" },
+      procedure:  { name: "Procedure Code", group: "embeddings", detail: "CPT/HCPCS procedure codes embedded into a 64-dimensional space.<br><br>Encoding: <code>Embedding(12,871 × 64)</code><br>Vocabulary: 12,871 codes<br>Output: 64 dims", params: "824K parameters" },
       specialty:  { name: "Provider Specialty", group: "embeddings", detail: "The specialty of the provider on the claim (e.g., cardiology, orthopedics).<br><br>Encoding: <code>Embedding(565 × 16)</code><br>Vocabulary: 565 specialty codes<br>Output: 16 dims", params: "9K parameters" },
       pos:        { name: "Place of Service", group: "embeddings", detail: "Where the service was performed (e.g., office, inpatient, ER).<br><br>Encoding: <code>Embedding(9 × 8)</code><br>Vocabulary: 9 place-of-service codes<br>Output: 8 dims", params: "72 parameters" },
       amounts:    { name: "Amounts (Allowed, Paid)", group: "continuous", detail: "Dollar amounts transformed with <code>sign(x) · log1p(|x|)</code> then projected.<br><br>Encoding: <code>Linear(2, 16) → LayerNorm</code><br>Input: 2 values (allowed, paid)<br>Output: 16 dims", params: "80 parameters" },
@@ -209,7 +209,7 @@
       labs:       { name: "Lab Values", group: "continuous", detail: "20 common lab results projected into 16 dims. A learned missing-value embedding handles unobserved labs.<br><br>Encoding: <code>Linear(20, 16) → LayerNorm</code> + missing embedding blend<br>Input: 20 LOINC features<br>Output: 16 dims", params: "~700 parameters" },
       concat:     { name: "Concatenation", group: "projection", detail: "All 10 input features concatenated into a single vector per sequence position.<br><br>128 + 64 + 16 + 8 + 16 + 32 + 16 + 1 + 2 + 16 = <code>299 dims</code>", params: "0 parameters" },
       projection: { name: "Input Projection", group: "projection", detail: "Projects the concatenated 299-dimensional input up to the transformer's hidden dimension.<br><br><code>Linear(299, 480)</code>", params: "144K parameters" },
-      transformer:{ name: "Transformer Encoder", group: "transformer", detail: "7 identical layers, each with pre-norm architecture:<br><br>• <code>LayerNorm → Multi-Head Attention (6 heads, 80 dims/head)</code><br>• <code>LayerNorm → FFN: Linear(480, 1920) → GELU → Linear(1920, 480)</code><br>• <code>Dropout(0.1)</code><br><br>Attention lets each claim attend to every other claim in the patient's history.", params: "~19.4M parameters (64.9% of model)" },
+      transformer:{ name: "Transformer Encoder Layer", group: "transformer", detail: "Each of the 7 identical layers uses pre-norm architecture:<br><br>• <code>LayerNorm → Multi-Head Attention (6 heads, 80 dims/head)</code><br>• <code>LayerNorm → FFN: Linear(480, 1920) → GELU → Linear(1920, 480)</code><br>• <code>Dropout(0.1)</code><br><br>Attention lets each claim attend to every other claim in the patient's history.", params: "~2.8M parameters per layer · 19.4M total" },
       mlm:        { name: "MLM Head", group: "mlm", detail: "Maps transformer hidden states to ICD predictions over the full embedding vocabulary.<br><br><code>Linear(480, 480) → GELU → LayerNorm → Linear(480, 15,210)</code><br><br>15% of unique ICD codes per sequence are masked (all occurrences), and the model predicts them from context.", params: "~7.5M parameters" },
       loss:       { name: "Training Objective", group: "mlm", detail: "Cross-entropy loss over the 15,210-class vocabulary, computed only at masked positions. All occurrences of each selected code are masked together, forcing the model to use surrounding context.", params: "" },
     };
@@ -243,29 +243,77 @@
       ...f, cx: fCX, cy: fStartY + i * fSpacing
     }));
 
-    const midY = fStartY + 4.5 * fSpacing; // vertical center of features
+    const midY = fStartY + 4.5 * fSpacing;
 
-    // Pipeline stages (left to right)
-    const stages = [
-      { id: 'concat',     cx: 225, cy: midY, rx: 42,  ry: 20, label: 'Concat', sub: '299',         group: 'projection' },
-      { id: 'projection', cx: 370, cy: midY, rx: 56,  ry: 24, label: 'Projection', sub: '299→480', group: 'projection' },
-      { id: 'transformer',cx: 560, cy: midY, rx: 82,  ry: 65, label: 'Transformer', sub: '7L · 6H · 80d', group: 'transformer' },
-      { id: 'mlm',        cx: 740, cy: midY, rx: 58,  ry: 24, label: 'MLM Head', sub: '480→15,210', group: 'mlm' },
-    ];
+    // Pipeline stages
+    const concatStage = { id: 'concat', cx: 210, cy: midY, rx: 42, ry: 20, label: 'Concat', sub: '299', group: 'projection' };
+    const projStage   = { id: 'projection', cx: 340, cy: midY, rx: 56, ry: 24, label: 'Projection', sub: '299→480', group: 'projection' };
+    const mlmStage    = { id: 'mlm', cx: 880, cy: midY, rx: 58, ry: 24, label: 'MLM Head', sub: '480→15,210', group: 'mlm' };
 
-    const lossCX = 880;
+    // 7 transformer layer circles
+    const tLayerR = 16;
+    const tLayerSpacing = 42;
+    const tStartX = 465;
+    const tLayers = d3.range(7).map(i => ({
+      cx: tStartX + i * tLayerSpacing,
+      cy: midY
+    }));
+
+    const lossCX = 980;
 
     // ── Draw ──────────────────────────────────────────────────
     const svg = d3.select('#arch-svg');
 
+    // ── Helpers ───────────────────────────────────────────────
+    function arrow(x1, y1, x2, y2) {
+      svg.append('line')
+        .attr('class', 'arrow-line')
+        .attr('x1', x1 + 4).attr('y1', y1)
+        .attr('x2', x2 - 10).attr('y2', y2)
+        .attr('marker-end', 'url(#arrowhead)');
+    }
+
+    function dimLabel(x, y, text) {
+      svg.append('text')
+        .attr('x', x).attr('y', y - 8)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#6fa3ef').attr('font-size', 9)
+        .attr('font-family', "'SF Mono','Fira Code',monospace")
+        .text(text);
+    }
+
+    function drawOval(s) {
+      const c = pal[s.group];
+      const g = svg.append('g')
+        .attr('class', 'arch-node')
+        .attr('data-component', s.id);
+
+      g.append('ellipse')
+        .attr('cx', s.cx).attr('cy', s.cy)
+        .attr('rx', s.rx).attr('ry', s.ry)
+        .attr('fill', c.fill).attr('stroke', c.stroke).attr('stroke-width', 1.5);
+
+      g.append('text')
+        .attr('x', s.cx).attr('y', s.cy - 4)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#e0e0e0').attr('font-size', 11)
+        .attr('font-weight', 600)
+        .text(s.label);
+
+      g.append('text')
+        .attr('x', s.cx).attr('y', s.cy + 12)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#9a9ab0').attr('font-size', 9)
+        .attr('font-family', "'SF Mono','Fira Code',monospace")
+        .text(s.sub);
+    }
+
     // ── Curved connections: features → concat ─────────────────
-    const concatS = stages[0];
     fPositions.forEach(f => {
       const x1 = f.cx + fRX;
       const y1 = f.cy;
-      const x2 = concatS.cx - concatS.rx;
-      const y2 = concatS.cy;
-      // Cubic bezier curving from feature toward concat center
+      const x2 = concatStage.cx - concatStage.rx;
+      const y2 = concatStage.cy;
       const cpx1 = x1 + 40;
       const cpx2 = x2 - 30;
       svg.append('path')
@@ -299,71 +347,83 @@
         .text(f.dim);
     });
 
-    // ── Arrows between pipeline stages ────────────────────────
-    function arrow(x1, y1, x2, y2) {
-      svg.append('line')
-        .attr('class', 'arrow-line')
-        .attr('x1', x1 + 4).attr('y1', y1)
-        .attr('x2', x2 - 10).attr('y2', y2)
-        .attr('marker-end', 'url(#arrowhead)');
-    }
+    // ── Concat & Projection ───────────────────────────────────
+    drawOval(concatStage);
+    arrow(concatStage.cx + concatStage.rx, concatStage.cy, projStage.cx - projStage.rx, projStage.cy);
+    drawOval(projStage);
 
-    for (let i = 0; i < stages.length - 1; i++) {
-      const a = stages[i], b = stages[i + 1];
-      arrow(a.cx + a.rx, a.cy, b.cx - b.rx, b.cy);
-    }
-    // MLM → Loss
-    const mlmS = stages[3];
-    arrow(mlmS.cx + mlmS.rx, mlmS.cy, lossCX - 30, midY);
+    // ── Arrow & label: projection → first transformer layer ───
+    const firstLayerLeft = tLayers[0].cx - tLayerR;
+    dimLabel((projStage.cx + projStage.rx + firstLayerLeft) / 2, midY, '480');
+    arrow(projStage.cx + projStage.rx, projStage.cy, firstLayerLeft, midY);
 
-    // ── Dimension labels on arrows ────────────────────────────
-    function dimLabel(x, y, text) {
-      svg.append('text')
-        .attr('x', x).attr('y', y - 8)
-        .attr('text-anchor', 'middle')
-        .attr('fill', '#6fa3ef').attr('font-size', 9)
-        .attr('font-family', "'SF Mono','Fira Code',monospace")
-        .text(text);
-    }
+    // ── Transformer background group ──────────────────────────
+    const tGroupLeft = tLayers[0].cx - tLayerR - 16;
+    const tGroupRight = tLayers[6].cx + tLayerR + 16;
+    const tGroupH = 92;
 
-    dimLabel((stages[1].cx + stages[1].rx + stages[2].cx - stages[2].rx) / 2, midY, '480');
-    dimLabel((stages[2].cx + stages[2].rx + stages[3].cx - stages[3].rx) / 2, midY, '480');
+    svg.append('rect')
+      .attr('x', tGroupLeft).attr('y', midY - tGroupH / 2)
+      .attr('width', tGroupRight - tGroupLeft).attr('height', tGroupH)
+      .attr('rx', 12)
+      .attr('fill', 'rgba(42, 26, 26, 0.3)')
+      .attr('stroke', 'rgba(138, 90, 106, 0.2)')
+      .attr('stroke-width', 1);
 
-    // ── Pipeline stage ovals ──────────────────────────────────
-    stages.forEach(s => {
-      const c = pal[s.group];
+    svg.append('text')
+      .attr('x', (tLayers[0].cx + tLayers[6].cx) / 2)
+      .attr('y', midY - tGroupH / 2 - 6)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#8a5a6a').attr('font-size', 10)
+      .text('Transformer Encoder');
+
+    svg.append('text')
+      .attr('x', (tLayers[0].cx + tLayers[6].cx) / 2)
+      .attr('y', midY + tGroupH / 2 + 14)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#9a9ab0').attr('font-size', 9)
+      .attr('font-family', "'SF Mono','Fira Code',monospace")
+      .text('6 heads · 80 dims/head · 19.4M params');
+
+    // ── 7 transformer layer circles with arrows ───────────────
+    const tc = pal.transformer;
+    tLayers.forEach((tl, i) => {
+      if (i > 0) {
+        const prev = tLayers[i - 1];
+        svg.append('line')
+          .attr('class', 'arrow-line')
+          .attr('x1', prev.cx + tLayerR + 2).attr('y1', prev.cy)
+          .attr('x2', tl.cx - tLayerR - 6).attr('y2', tl.cy)
+          .attr('marker-end', 'url(#arrowhead)');
+      }
+
       const g = svg.append('g')
         .attr('class', 'arch-node')
-        .attr('data-component', s.id);
+        .attr('data-component', 'transformer');
 
       g.append('ellipse')
-        .attr('cx', s.cx).attr('cy', s.cy)
-        .attr('rx', s.rx).attr('ry', s.ry)
-        .attr('fill', c.fill).attr('stroke', c.stroke).attr('stroke-width', 1.5);
+        .attr('cx', tl.cx).attr('cy', tl.cy)
+        .attr('rx', tLayerR).attr('ry', tLayerR)
+        .attr('fill', tc.fill).attr('stroke', tc.stroke).attr('stroke-width', 1.5);
 
       g.append('text')
-        .attr('x', s.cx).attr('y', s.cy - 4)
+        .attr('x', tl.cx).attr('y', tl.cy + 4)
         .attr('text-anchor', 'middle')
-        .attr('fill', '#e0e0e0').attr('font-size', s.id === 'transformer' ? 13 : 11)
+        .attr('fill', '#e0e0e0').attr('font-size', 11)
         .attr('font-weight', 600)
-        .text(s.label);
-
-      g.append('text')
-        .attr('x', s.cx).attr('y', s.cy + 12)
-        .attr('text-anchor', 'middle')
-        .attr('fill', '#9a9ab0').attr('font-size', s.id === 'transformer' ? 11 : 9)
-        .attr('font-family', "'SF Mono','Fira Code',monospace")
-        .text(s.sub);
-
-      // Extra label for transformer
-      if (s.id === 'transformer') {
-        g.append('text')
-          .attr('x', s.cx).attr('y', s.cy + 28)
-          .attr('text-anchor', 'middle')
-          .attr('fill', '#8a5a6a').attr('font-size', 10)
-          .text('19.4M params');
-      }
+        .text(i + 1);
     });
+
+    // ── Arrow & label: last transformer layer → MLM ───────────
+    const lastLayerRight = tLayers[6].cx + tLayerR;
+    dimLabel((lastLayerRight + mlmStage.cx - mlmStage.rx) / 2, midY, '480');
+    arrow(lastLayerRight, midY, mlmStage.cx - mlmStage.rx, midY);
+
+    // ── MLM Head ──────────────────────────────────────────────
+    drawOval(mlmStage);
+
+    // ── MLM → Loss ────────────────────────────────────────────
+    arrow(mlmStage.cx + mlmStage.rx, mlmStage.cy, lossCX - 30, midY);
 
     // ── Loss label ────────────────────────────────────────────
     const lg = svg.append('g')
