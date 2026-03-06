@@ -132,16 +132,16 @@
       detail: 'Final normalization after all 7 transformer layers, before the MLM head.<br><br><code>LayerNorm(480)</code><br><br>• Scale (γ): 480 parameters<br>• Bias (β): 480 parameters',
       params: '960 parameters' };
     const features = [
-      { id: 'icd', name: 'ICD Code', dim: '128', group: 'embeddings' },
-      { id: 'procedure', name: 'Procedure', dim: '64', group: 'embeddings' },
-      { id: 'specialty', name: 'Specialty', dim: '16', group: 'embeddings' },
-      { id: 'pos', name: 'Place of Svc', dim: '8', group: 'embeddings' },
-      { id: 'amounts', name: 'Amounts', dim: '16', group: 'continuous' },
-      { id: 'time', name: 'Time', dim: '32', group: 'continuous' },
-      { id: 'zip', name: 'Zip Region', dim: '16', group: 'embeddings' },
-      { id: 'age', name: 'Age', dim: '1', group: 'continuous' },
-      { id: 'gender', name: 'Gender', dim: '2', group: 'continuous' },
-      { id: 'labs', name: 'Lab Values', dim: '16', group: 'continuous' },
+      { id: 'icd', name: 'ICD Code', dim: '512×128', group: 'embeddings' },
+      { id: 'procedure', name: 'Procedure', dim: '512×64', group: 'embeddings' },
+      { id: 'specialty', name: 'Specialty', dim: '512×16', group: 'embeddings' },
+      { id: 'pos', name: 'Place of Svc', dim: '512×8', group: 'embeddings' },
+      { id: 'amounts', name: 'Amounts', dim: '512×16', group: 'continuous' },
+      { id: 'time', name: 'Time', dim: '512×32', group: 'continuous' },
+      { id: 'zip', name: 'Zip Region', dim: '512×16', group: 'embeddings' },
+      { id: 'age', name: 'Age', dim: '512×1', group: 'continuous' },
+      { id: 'gender', name: 'Gender', dim: '512×2', group: 'continuous' },
+      { id: 'labs', name: 'Lab Values', dim: '512×16', group: 'continuous' },
     ];
     const fRX=52, fRY=15, fCX=68, fSp=34, fSY=22;
     const fPos = features.map((f,i)=>({...f, cx:fCX, cy:fSY+i*fSp}));
@@ -182,21 +182,13 @@
     });
     fPos.forEach(f=>{
       const c=pal[f.group], g=svg.append('g').attr('class','arch-node').attr('data-component',f.id);
-      // Stacked ghost copies to suggest 512 positions
-      [3,2,1].forEach(d=>{
-        g.append('ellipse').attr('cx',f.cx+d*1.5).attr('cy',f.cy+d*1.5).attr('rx',fRX).attr('ry',fRY)
-          .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',0.5).attr('opacity',0.15);
-      });
       g.append('ellipse').attr('cx',f.cx).attr('cy',f.cy).attr('rx',fRX).attr('ry',fRY)
         .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5);
       g.append('text').attr('x',f.cx).attr('y',f.cy-3).attr('text-anchor','middle')
         .attr('fill','#e0e0e0').attr('font-size',10).text(f.name);
       g.append('text').attr('x',f.cx).attr('y',f.cy+10).attr('text-anchor','middle')
-        .attr('fill','#6fa3ef').attr('font-size',9).attr('font-family',"'SF Mono','Fira Code',monospace").text(f.dim);
+        .attr('fill','#6fa3ef').attr('font-size',8).attr('font-family',"'SF Mono','Fira Code',monospace").text(f.dim);
     });
-    // ×512 label near the feature stack
-    svg.append('text').attr('x',fCX+fRX+8).attr('y',fSY-6)
-      .attr('fill','#9a9ab0').attr('font-size',9).attr('font-family',"'SF Mono','Fira Code',monospace").text('×512');
     for(let i=0;i<pipeline.length-1;i++){
       const a=pipeline[i],b=pipeline[i+1];
       if(a.cy===b.cy){ arrow(a.cx+a.rx,a.cy,b.cx-b.rx,b.cy); }
