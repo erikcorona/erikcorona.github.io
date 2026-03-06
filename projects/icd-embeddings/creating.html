@@ -52,7 +52,7 @@
     <div class="article-content">
       <p>We use a BERT-style masked language model to learn ICD embeddings. The model takes a patient's claim history as a sequence of up to 512 positions, masks 15% of ICD codes, and learns to predict them from surrounding clinical context.</p>
       <h3>Model Architecture</h3>
-      <p>Hover over any component to explore what it does and how many parameters it contributes.</p>
+      <p>Hover over any component to explore what it does and how many parameters it contributes. All shapes are shown per patient&mdash;in practice, this is batched tensor multiplication with a batch dimension of 64 patients processed in parallel, omitted below for clarity.</p>
       <svg class="arch-svg" id="arch-svg" viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
