@@ -351,7 +351,7 @@
         <!-- MLM Head -->
         <div class="arch-block" data-component="mlm">
           <div class="arch-block-title">MLM Head</div>
-          <div class="arch-block-sub">480 &rarr; 2,237 ICD codes</div>
+          <div class="arch-block-sub">480 &rarr; 15,210</div>
         </div>
 
         <!-- Info Panel -->
@@ -373,8 +373,8 @@
             <div class="param-segment" data-group="embeddings" style="width:9.4%;background:#4a7fb5;" title="Embeddings"></div>
             <div class="param-segment" data-group="continuous" style="width:0.3%;background:#5a9a6a;" title="Continuous Encoders"></div>
             <div class="param-segment" data-group="projection" style="width:0.5%;background:#7a8a5a;" title="Input Projection"></div>
-            <div class="param-segment" data-group="transformer" style="width:84.8%;background:#8a5a6a;" title="Transformer Encoder"></div>
-            <div class="param-segment" data-group="mlm" style="width:5.0%;background:#7a6a9a;" title="MLM Head"></div>
+            <div class="param-segment" data-group="transformer" style="width:64.9%;background:#8a5a6a;" title="Transformer Encoder"></div>
+            <div class="param-segment" data-group="mlm" style="width:24.9%;background:#7a6a9a;" title="MLM Head"></div>
           </div>
           <div class="param-bar-legend">
             <div class="param-legend-item"><div class="param-legend-swatch" style="background:#4a7fb5;"></div> Embeddings</div>
@@ -461,13 +461,13 @@
         name: "Transformer Encoder",
         group: "transformer",
         detail: "7 identical layers, each with pre-norm architecture:<br><br>• <code>LayerNorm → Multi-Head Attention (6 heads, 80 dims/head)</code><br>• <code>LayerNorm → FFN: Linear(480, 1920) → GELU → Linear(1920, 480)</code><br>• <code>Dropout(0.1)</code><br><br>The bulk of the model's capacity. Attention lets each claim attend to every other claim in the patient's history, learning which diagnoses, procedures, and contexts are predictive of masked ICD codes.",
-        params: "~25.3M parameters (84.8% of model)"
+        params: "~19.4M parameters (64.9% of model)"
       },
       mlm: {
         name: "MLM Head",
         group: "mlm",
-        detail: "Maps the transformer's hidden representations back to ICD code predictions.<br><br><code>Linear(480, 480) → GELU → LayerNorm → Linear(480, 2,237)</code><br><br>Trained with cross-entropy loss. During training, 15% of unique ICD codes in each sequence are masked (all occurrences), and the model predicts them from context.",
-        params: "~1.5M parameters"
+        detail: "Maps the transformer's hidden representations back to ICD code predictions over the full embedding vocabulary.<br><br><code>Linear(480, 480) → GELU → LayerNorm → Linear(480, 15,210)</code><br><br>Trained with cross-entropy loss. During training, 15% of unique ICD codes in each sequence are masked (all occurrences), and the model predicts them from context.",
+        params: "~7.5M parameters"
       }
     };
 
