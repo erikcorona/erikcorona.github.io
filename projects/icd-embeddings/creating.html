@@ -62,8 +62,8 @@
       <svg class="arch-svg" id="arch-svg" viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" class="arrow-head"/></marker>
-          <marker id="arrowhead-down" markerWidth="6" markerHeight="8" refX="3" refY="8" orient="auto"><polygon points="0 0, 6 0, 3 8" class="arrow-head"/></marker>
+          <marker id="arrowhead" markerWidth="16" markerHeight="12" refX="16" refY="6" orient="auto"><polygon points="0 0, 16 6, 0 12" class="arrow-head"/></marker>
+          <marker id="arrowhead-down" markerWidth="12" markerHeight="16" refX="6" refY="16" orient="auto"><polygon points="0 0, 12 0, 6 16" class="arrow-head"/></marker>
         </defs>
       </svg>
       <div class="arch-info" id="arch-info">
@@ -165,53 +165,53 @@
       { id: 'gender', name: 'Gender', dim: '512×2', group: 'continuous' },
       { id: 'labs', name: 'Lab Values', dim: '512×16', group: 'continuous' },
     ];
-    const fRX=52, fRY=15, fCX=68, fSp=34, fSY=22;
+    const fRX=104, fRY=30, fCX=136, fSp=68, fSY=44;
     const fPos = features.map((f,i)=>({...f, cx:fCX, cy:fSY+i*fSp}));
     const midY = fSY + 2*fSp;
     // Pipeline: main sequential flow (Q,K,V stored separately as parallel branches)
     const pipeline = [
-      { id:'concat', label:'Concat', sub:'0', group:'projection', rx:34, ry:16 },
-      { id:'projection', label:'Projection', sub:'144K', group:'projection', rx:42, ry:16 },
+      { id:'concat', label:'Concat', sub:'0', group:'projection', rx:68, ry:32 },
+      { id:'projection', label:'Projection', sub:'144K', group:'projection', rx:84, ry:32 },
     ];
     const parallel = []; // {layer, q, k, v} groups
     for (let i=1;i<=7;i++) {
-      pipeline.push({ id:'ln_a_'+i, label:'LN', sub:'960', group:'transformer', rx:22, ry:12, layer:i, isLayerStart:true, fanOut:i });
+      pipeline.push({ id:'ln_a_'+i, label:'LN', sub:'960', group:'transformer', rx:44, ry:24, layer:i, isLayerStart:true, fanOut:i });
       // Q,K,V are parallel — not in main pipeline
       parallel.push({
         layer:i,
-        q:{ id:'q_'+i, label:'Q '+i, sub:'230K', group:'transformer', rx:28, ry:12, layer:i },
-        k:{ id:'k_'+i, label:'K '+i, sub:'230K', group:'transformer', rx:28, ry:12, layer:i },
-        v:{ id:'v_'+i, label:'V '+i, sub:'230K', group:'transformer', rx:28, ry:12, layer:i },
+        q:{ id:'q_'+i, label:'Q '+i, sub:'230K', group:'transformer', rx:56, ry:24, layer:i },
+        k:{ id:'k_'+i, label:'K '+i, sub:'230K', group:'transformer', rx:56, ry:24, layer:i },
+        v:{ id:'v_'+i, label:'V '+i, sub:'230K', group:'transformer', rx:56, ry:24, layer:i },
       });
-      pipeline.push({ id:'qkt_'+i, label:'QKᵀ '+i, sub:'0', group:'transformer', rx:28, ry:12, layer:i, fanIn:i });
-      pipeline.push({ id:'av_'+i, label:'A·V '+i, sub:'0', group:'transformer', rx:28, ry:12, layer:i });
-      pipeline.push({ id:'out_'+i, label:'Out '+i, sub:'230K', group:'transformer', rx:28, ry:14, layer:i });
-      pipeline.push({ id:'ln_f_'+i, label:'LN', sub:'960', group:'transformer', rx:22, ry:12, layer:i });
-      pipeline.push({ id:'up_'+i, label:'Up '+i, sub:'924K', group:'transformer', rx:28, ry:14, layer:i });
-      pipeline.push({ id:'down_'+i, label:'Down '+i, sub:'922K', group:'transformer', rx:28, ry:14, layer:i });
+      pipeline.push({ id:'qkt_'+i, label:'QKᵀ '+i, sub:'0', group:'transformer', rx:56, ry:24, layer:i, fanIn:i });
+      pipeline.push({ id:'av_'+i, label:'A·V '+i, sub:'0', group:'transformer', rx:56, ry:24, layer:i });
+      pipeline.push({ id:'out_'+i, label:'Out '+i, sub:'230K', group:'transformer', rx:56, ry:28, layer:i });
+      pipeline.push({ id:'ln_f_'+i, label:'LN', sub:'960', group:'transformer', rx:44, ry:24, layer:i });
+      pipeline.push({ id:'up_'+i, label:'Up '+i, sub:'924K', group:'transformer', rx:56, ry:28, layer:i });
+      pipeline.push({ id:'down_'+i, label:'Down '+i, sub:'922K', group:'transformer', rx:56, ry:28, layer:i });
     }
-    pipeline.push({ id:'ln_final', label:'LN', sub:'960', group:'transformer', rx:22, ry:12 });
-    pipeline.push({ id:'mlm', label:'MLM Head', sub:'7.5M', group:'mlm', rx:42, ry:16 });
-    pipeline.push({ id:'loss', label:'CE Loss', sub:'0', group:'mlm', rx:34, ry:14 });
+    pipeline.push({ id:'ln_final', label:'LN', sub:'960', group:'transformer', rx:44, ry:24 });
+    pipeline.push({ id:'mlm', label:'MLM Head', sub:'7.5M', group:'mlm', rx:84, ry:32 });
+    pipeline.push({ id:'loss', label:'CE Loss', sub:'0', group:'mlm', rx:68, ry:28 });
     // Layout: main pipeline wrapping left-to-right
     // Use full viewport width but keep node sizes at original scale
     const containerW=window.innerWidth || 900;
-    const gap=10, rowH=90, pSpread=30;
-    const maxX=containerW-20, wrapX=170;
-    let cx=210-pipeline[0].rx, cr=0;
+    const gap=20, rowH=180, pSpread=60;
+    const maxX=containerW-40, wrapX=340;
+    let cx=420-pipeline[0].rx, cr=0;
     pipeline.forEach((n,i)=>{
       // Leave extra horizontal space after fan-out nodes for the parallel Q,K,V
-      const needW = n.fanOut ? 2*n.rx + gap + 2*28 : 2*n.rx;
+      const needW = n.fanOut ? 2*n.rx + gap + 2*56 : 2*n.rx;
       if(cx+needW>maxX && i>0){ cr++; cx=wrapX; }
       n.cx=cx+n.rx; n.cy=midY+cr*rowH; cx=n.cx+n.rx+gap;
       // Position parallel Q,K,V between fan-out (LN) and fan-in (QKᵀ)
       if(n.fanOut){
         const pg=parallel.find(p=>p.layer===n.fanOut);
-        const px=cx+28; // center of Q,K,V group
+        const px=cx+56; // center of Q,K,V group
         pg.q.cx=px; pg.q.cy=n.cy-pSpread;
         pg.k.cx=px; pg.k.cy=n.cy;
         pg.v.cx=px; pg.v.cy=n.cy+pSpread;
-        cx=px+28+gap; // advance past the parallel group
+        cx=px+56+gap; // advance past the parallel group
       }
     });
     // Collect all nodes for rendering
@@ -222,13 +222,13 @@
     const svg = d3.select('#arch-svg');
     function arrow(x1,y1,x2,y2){
       svg.append('line').attr('class','arrow-line')
-        .attr('x1',x1+3).attr('y1',y1).attr('x2',x2-8).attr('y2',y2)
+        .attr('x1',x1+6).attr('y1',y1).attr('x2',x2-16).attr('y2',y2)
         .attr('marker-end','url(#arrowhead)');
     }
     function bezArrow(x1,y1,x2,y2){
       const mx=(x1+x2)/2;
       svg.append('path').attr('class','arrow-path')
-        .attr('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+(x2-6)+','+y2)
+        .attr('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+(x2-12)+','+y2)
         .attr('marker-end','url(#arrowhead)');
     }
     // Feature bezier connections to concat
@@ -236,17 +236,17 @@
     fPos.forEach(f=>{
       const x1=f.cx+fRX,y1=f.cy,x2=cn.cx-cn.rx,y2=cn.cy;
       svg.append('path').attr('class','conn-line')
-        .attr('d','M'+x1+','+y1+' C'+(x1+40)+','+y1+' '+(x2-30)+','+y2+' '+x2+','+y2);
+        .attr('d','M'+x1+','+y1+' C'+(x1+80)+','+y1+' '+(x2-60)+','+y2+' '+x2+','+y2);
     });
     // Render feature nodes
     fPos.forEach(f=>{
       const c=pal[f.group], g=svg.append('g').attr('class','arch-node').attr('data-component',f.id);
       g.append('ellipse').attr('cx',f.cx).attr('cy',f.cy).attr('rx',fRX).attr('ry',fRY)
-        .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5);
-      g.append('text').attr('x',f.cx).attr('y',f.cy-3).attr('text-anchor','middle')
-        .attr('fill','#e0e0e0').attr('font-size',10).text(f.name);
-      g.append('text').attr('x',f.cx).attr('y',f.cy+10).attr('text-anchor','middle')
-        .attr('fill','#6fa3ef').attr('font-size',8).attr('font-family',"'SF Mono','Fira Code',monospace").text(f.dim);
+        .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',3);
+      g.append('text').attr('x',f.cx).attr('y',f.cy-6).attr('text-anchor','middle')
+        .attr('fill','#e0e0e0').attr('font-size',20).text(f.name);
+      g.append('text').attr('x',f.cx).attr('y',f.cy+20).attr('text-anchor','middle')
+        .attr('fill','#6fa3ef').attr('font-size',16).attr('font-family',"'SF Mono','Fira Code',monospace").text(f.dim);
     });
     // Pipeline arrows (skip fan-out → fan-in, those are handled separately)
     for(let i=0;i<pipeline.length-1;i++){
@@ -256,7 +256,7 @@
       else {
         const by=(a.cy+b.cy)/2;
         svg.append('path').attr('class','arrow-path')
-          .attr('d','M'+a.cx+','+(a.cy+a.ry)+' C'+a.cx+','+by+' '+b.cx+','+by+' '+b.cx+','+(b.cy-b.ry-8))
+          .attr('d','M'+a.cx+','+(a.cy+a.ry)+' C'+a.cx+','+by+' '+b.cx+','+by+' '+b.cx+','+(b.cy-b.ry-16))
           .attr('marker-end','url(#arrowhead-down)');
       }
     }
@@ -277,26 +277,26 @@
     allNodes.forEach(n=>{
       const c=pal[n.group], g=svg.append('g').attr('class','arch-node').attr('data-component',n.id);
       g.append('ellipse').attr('cx',n.cx).attr('cy',n.cy).attr('rx',n.rx).attr('ry',n.ry)
-        .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5);
+        .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',3);
       if(n.sub){
-        g.append('text').attr('x',n.cx).attr('y',n.cy-2).attr('text-anchor','middle')
-          .attr('fill','#e0e0e0').attr('font-size',n.rx<=24?7:9).attr('font-weight',600).text(n.label);
-        g.append('text').attr('x',n.cx).attr('y',n.cy+9).attr('text-anchor','middle')
-          .attr('fill','#9a9ab0').attr('font-size',6.5).attr('font-family',"'SF Mono','Fira Code',monospace").text(n.sub);
+        g.append('text').attr('x',n.cx).attr('y',n.cy-4).attr('text-anchor','middle')
+          .attr('fill','#e0e0e0').attr('font-size',n.rx<=48?14:18).attr('font-weight',600).text(n.label);
+        g.append('text').attr('x',n.cx).attr('y',n.cy+18).attr('text-anchor','middle')
+          .attr('fill','#9a9ab0').attr('font-size',13).attr('font-family',"'SF Mono','Fira Code',monospace").text(n.sub);
       } else {
-        g.append('text').attr('x',n.cx).attr('y',n.cy+4).attr('text-anchor','middle')
-          .attr('fill','#e0e0e0').attr('font-size',9).attr('font-weight',600).text(n.label);
+        g.append('text').attr('x',n.cx).attr('y',n.cy+8).attr('text-anchor','middle')
+          .attr('fill','#e0e0e0').attr('font-size',18).attr('font-weight',600).text(n.label);
       }
       if(n.isLayerStart){
-        svg.append('text').attr('x',n.cx).attr('y',n.cy-n.ry-5)
-          .attr('text-anchor','middle').attr('fill','#8a5a6a').attr('font-size',8).text('L'+n.layer);
+        svg.append('text').attr('x',n.cx).attr('y',n.cy-n.ry-10)
+          .attr('text-anchor','middle').attr('fill','#8a5a6a').attr('font-size',16).text('L'+n.layer);
       }
     });
     const ovG=svg.append('g').attr('class','arch-node').attr('data-component','overview');
-    ovG.append('ellipse').attr('cx',containerW-65).attr('cy',18).attr('rx',48).attr('ry',14)
-      .attr('fill','#16213e').attr('stroke','#3a3a5a').attr('stroke-width',1).attr('stroke-dasharray','3,2');
-    ovG.append('text').attr('x',containerW-65).attr('y',22).attr('text-anchor','middle')
-      .attr('fill','#9a9ab0').attr('font-size',10).text('Overview');
+    ovG.append('ellipse').attr('cx',containerW-130).attr('cy',36).attr('rx',96).attr('ry',28)
+      .attr('fill','#16213e').attr('stroke','#3a3a5a').attr('stroke-width',2).attr('stroke-dasharray','6,4');
+    ovG.append('text').attr('x',containerW-130).attr('y',44).attr('text-anchor','middle')
+      .attr('fill','#9a9ab0').attr('font-size',20).text('Overview');
     // Matrix visualization data: arrays of [rows,cols,label,type] or operator strings
     const mColors={idx:'#6fa3ef',in:'#4a7fb5',wt:'#8a5a6a',bias:'#5a9a6a',out:'#7a6a9a',emb:'#4a7fb5'};
     function dimPx(d){if(d<=1)return 5;if(d<=8)return 10;if(d<=20)return 16;if(d<=64)return 24;if(d<=128)return 32;if(d<=300)return 40;if(d<=500)return 48;if(d<=2000)return 62;return 78;}
