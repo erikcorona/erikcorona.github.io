@@ -254,32 +254,32 @@
     const mColors={idx:'#6fa3ef',in:'#4a7fb5',wt:'#8a5a6a',bias:'#5a9a6a',out:'#7a6a9a',emb:'#4a7fb5'};
     function dimPx(d){if(d<=1)return 5;if(d<=8)return 10;if(d<=20)return 16;if(d<=64)return 24;if(d<=128)return 32;if(d<=300)return 40;if(d<=500)return 48;if(d<=2000)return 62;return 78;}
     const mv={};
-    mv.icd=[[1,1,'i','idx'],'→',[15210,128,'E_icd','emb'],'=',[1,128,'e','out']];
-    mv.procedure=[[1,1,'i','idx'],'→',[12871,64,'E_proc','emb'],'=',[1,64,'e','out']];
-    mv.specialty=[[1,1,'i','idx'],'→',[565,16,'E_spec','emb'],'=',[1,16,'e','out']];
-    mv.pos=[[1,1,'i','idx'],'→',[9,8,'E_pos','emb'],'=',[1,8,'e','out']];
-    mv.zip=[[1,1,'i','idx'],'→',[1000,16,'E_zip','emb'],'=',[1,16,'e','out']];
-    mv.amounts=[[1,2,'x','in'],'×',[2,16,'W','wt'],'+',[1,16,'b','bias'],'=',[1,16,'h','out']];
-    mv.time=['sin/cos(t·ω)','=',[1,32,'h','out']];
-    mv.age=['age/120','=',[1,1,'h','out']];
-    mv.gender=['onehot(g)','=',[1,2,'h','out']];
-    mv.labs=[[1,20,'x','in'],'×',[20,16,'W','wt'],'+',[1,16,'b','bias'],'=',[1,16,'h','out']];
-    mv.concat=[[512,128,'','in'],'⊕',[512,64,'','in'],'⊕','…','⊕',[512,16,'','in'],'=',[512,299,'X','out']];
-    mv.projection=[[512,299,'X','in'],'×',[299,480,'W','wt'],'+',[512,480,'b','bias'],'=',[512,480,'H','out']];
+    mv.icd=[[64,512,'idx','idx'],'→',[15210,128,'E_icd','emb'],'=',[64,512,128,'','out']];
+    mv.procedure=[[64,512,'idx','idx'],'→',[12871,64,'E_proc','emb'],'=',[64,512,64,'','out']];
+    mv.specialty=[[64,512,'idx','idx'],'→',[565,16,'E_spec','emb'],'=',[64,512,16,'','out']];
+    mv.pos=[[64,512,'idx','idx'],'→',[9,8,'E_pos','emb'],'=',[64,512,8,'','out']];
+    mv.zip=[[64,1,'idx','idx'],'→',[1000,16,'E_zip','emb'],'=',[64,512,16,'','out']];
+    mv.amounts=[[64,512,2,'x','in'],'×',[2,16,'W','wt'],'+',[64,512,16,'b','bias'],'=',[64,512,16,'h','out']];
+    mv.time=['sin/cos(t·ω)','=',[64,512,32,'h','out']];
+    mv.age=['age/120','=',[64,512,1,'h','out']];
+    mv.gender=['onehot(g)','=',[64,512,2,'h','out']];
+    mv.labs=[[64,512,20,'x','in'],'×',[20,16,'W','wt'],'+',[64,512,16,'b','bias'],'=',[64,512,16,'h','out']];
+    mv.concat=[[64,512,128,'','in'],'⊕',[64,512,64,'','in'],'⊕','…','⊕',[64,512,16,'','in'],'=',[64,512,299,'X','out']];
+    mv.projection=[[64,512,299,'X','in'],'×',[299,480,'W','wt'],'+',[64,512,480,'b','bias'],'=',[64,512,480,'H','out']];
     for(let i=1;i<=7;i++){
-      mv['ln_a_'+i]=[[512,480,'X','in'],'→',[512,480,'γ⊙x̂+β','wt'],'=',[512,480,'H','out']];
-      mv['q_'+i]=[[512,480,'X','in'],'×',[480,480,'W_Q','wt'],'+',[512,480,'b','bias'],'=',[512,480,'Q','out'],'→','reshape','→','(6,512,80)'];
-      mv['k_'+i]=[[512,480,'X','in'],'×',[480,480,'W_K','wt'],'+',[512,480,'b','bias'],'=',[512,480,'K','out'],'→','reshape','→','(6,512,80)'];
-      mv['v_'+i]=[[512,480,'X','in'],'×',[480,480,'W_V','wt'],'+',[512,480,'b','bias'],'=',[512,480,'V','out'],'→','reshape','→','(6,512,80)'];
-      mv['qkt_'+i]=['per head:',[512,80,'Q','in'],'×',[80,512,'Kᵀ','wt'],'÷√80','→','softmax','=',[512,512,'scores','out'],'×6 heads'];
-      mv['av_'+i]=['per head:',[512,512,'scores','in'],'×',[512,80,'V','wt'],'=',[512,80,'head','out'],'×6 heads','→','concat','=',[512,480,'H','out']];
-      mv['out_'+i]=[[512,480,'H','in'],'×',[480,480,'W_O','wt'],'+',[512,480,'b','bias'],'+ residual','=',[512,480,'H','out']];
+      mv['ln_a_'+i]=[[64,512,480,'X','in'],'→',[64,512,480,'γ⊙x̂+β','wt'],'=',[64,512,480,'H','out']];
+      mv['q_'+i]=[[64,512,480,'X','in'],'×',[480,480,'W_Q','wt'],'+',[64,512,480,'b','bias'],'=',[64,512,480,'Q','out'],'→','reshape','=',[64,6,512,80,'Q','out']];
+      mv['k_'+i]=[[64,512,480,'X','in'],'×',[480,480,'W_K','wt'],'+',[64,512,480,'b','bias'],'=',[64,512,480,'K','out'],'→','reshape','=',[64,6,512,80,'K','out']];
+      mv['v_'+i]=[[64,512,480,'X','in'],'×',[480,480,'W_V','wt'],'+',[64,512,480,'b','bias'],'=',[64,512,480,'V','out'],'→','reshape','=',[64,6,512,80,'V','out']];
+      mv['qkt_'+i]=[[64,6,512,80,'Q','in'],'×',[64,6,80,512,'Kᵀ','wt'],'÷√80','→','softmax','=',[64,6,512,512,'scores','out']];
+      mv['av_'+i]=[[64,6,512,512,'scores','in'],'×',[64,6,512,80,'V','wt'],'=',[64,6,512,80,'','out'],'→','concat','=',[64,512,480,'H','out']];
+      mv['out_'+i]=[[64,512,480,'H','in'],'×',[480,480,'W_O','wt'],'+',[64,512,480,'b','bias'],'+ residual','=',[64,512,480,'H','out']];
       mv['ln_f_'+i]=mv['ln_a_'+i];
-      mv['up_'+i]=[[512,480,'X','in'],'×',[480,1920,'W_up','wt'],'+',[512,1920,'b','bias'],'→','GELU','=',[512,1920,'H','out']];
-      mv['down_'+i]=[[512,1920,'H','in'],'×',[1920,480,'W_dn','wt'],'+',[512,480,'b','bias'],'=',[512,480,'X','out']];
+      mv['up_'+i]=[[64,512,480,'X','in'],'×',[480,1920,'W_up','wt'],'+',[64,512,1920,'b','bias'],'→','GELU','=',[64,512,1920,'H','out']];
+      mv['down_'+i]=[[64,512,1920,'H','in'],'×',[1920,480,'W_dn','wt'],'+',[64,512,480,'b','bias'],'=',[64,512,480,'X','out']];
     }
     mv.ln_final=mv.ln_a_1;
-    mv.mlm=[[512,480,'H','in'],'×',[480,480,'W₁','wt'],'→','GELU→LN','→',[512,480,'','in'],'×',[480,15210,'W₂','wt'],'=',[512,15210,'logits','out']];
+    mv.mlm=[[64,512,480,'H','in'],'×',[480,480,'W₁','wt'],'→','GELU→LN','→',[64,512,480,'','in'],'×',[480,15210,'W₂','wt'],'=',[64,512,15210,'logits','out']];
     mv.loss=[[1,15210,'logits[i]','in'],'→','softmax','→',[1,15210,'probs','out'],'→','p[yᵢ]','→','-log','→','scalar','×M masked','→','mean','=',[1,1,'loss','out']];
     mv.overview=[];
     const mathSvg=d3.select('#info-math');
@@ -294,12 +294,17 @@
           mathSvg.append('text').attr('x',x).attr('y',cy+4).attr('fill','#9a9ab0').attr('font-size',12).attr('font-family',"'SF Mono','Fira Code',monospace").text(op);
           x+=op.length*7.5+8;
         }else{
-          const[r,c,label,type]=op;
+          // Last 2 elements are label and type, rest are dimensions
+          const type=op[op.length-1], label=op[op.length-2];
+          const dims=op.slice(0,op.length-2);
+          // Use last two dims for visual size, show all dims in label
+          const r=dims.length>=2?dims[dims.length-2]:1, c=dims[dims.length-1];
           const h=dimPx(r),w=dimPx(c),col=mColors[type]||'#555';
           if(label)mathSvg.append('text').attr('x',x+w/2).attr('y',cy-h/2-4).attr('text-anchor','middle').attr('fill','#9a9ab0').attr('font-size',9).attr('font-family',"'SF Mono','Fira Code',monospace").text(label);
           mathSvg.append('rect').attr('x',x).attr('y',cy-h/2).attr('width',w).attr('height',h).attr('fill',col).attr('fill-opacity',0.25).attr('stroke',col).attr('stroke-width',1).attr('rx',2);
-          const dim=(r===1&&c===1)?'1':r+'×'+c;
-          mathSvg.append('text').attr('x',x+w/2).attr('y',cy+h/2+11).attr('text-anchor','middle').attr('fill','#666').attr('font-size',7.5).attr('font-family',"'SF Mono','Fira Code',monospace").text(dim);
+          const dim=dims.join('×');
+          const fs=dim.length>10?6:dim.length>7?6.5:7.5;
+          mathSvg.append('text').attr('x',x+w/2).attr('y',cy+h/2+11).attr('text-anchor','middle').attr('fill','#666').attr('font-size',fs).attr('font-family',"'SF Mono','Fira Code',monospace").text(dim);
           x+=w+8;
         }
       });
