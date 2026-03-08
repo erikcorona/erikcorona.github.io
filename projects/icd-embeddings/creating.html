@@ -122,9 +122,15 @@
       info['ln_a_'+i] = { name: 'Layer '+i+': Pre-Attention LayerNorm', group: 'transformer',
         detail: 'Normalizes hidden states before self-attention in layer '+i+' of 7.<br><br><code>LayerNorm(480)</code><br>Tensor: <code>(64, 512, 480) → (64, 512, 480)</code><br><br>• Scale (γ): 480 parameters<br>• Bias (β): 480 parameters',
         params: '960 parameters' };
-      info['qkv_'+i] = { name: 'Layer '+i+': QKV Projection', group: 'transformer',
-        detail: 'Projects input to Query, Key, and Value matrices in layer '+i+' of 7.<br><br><code>Linear(480, 1440)</code> → split into Q, K, V → reshape to 6 heads<br>Tensor: <code>(64, 512, 480) → (64, 512, 1440) → 3 × (64, 6, 512, 80)</code><br><br>• Weight: 480 × 1440 = 691,200<br>• Bias: 1,440',
-        params: '~693K parameters' };
+      info['q_'+i] = { name: 'Layer '+i+': Query Projection', group: 'transformer',
+        detail: 'Projects input to Query vectors for layer '+i+' of 7. Each position produces a query that asks "what should I attend to?"<br><br><code>Linear(480, 480)</code> → reshape to 6 heads of 80 dims<br>Tensor: <code>(64, 512, 480) → (64, 512, 480) → (64, 6, 512, 80)</code><br><br>• Weight: 480 × 480 = 230,400<br>• Bias: 480',
+        params: '~230K parameters' };
+      info['k_'+i] = { name: 'Layer '+i+': Key Projection', group: 'transformer',
+        detail: 'Projects input to Key vectors for layer '+i+' of 7. Each position produces a key that says "here is what I contain."<br><br><code>Linear(480, 480)</code> → reshape to 6 heads of 80 dims<br>Tensor: <code>(64, 512, 480) → (64, 512, 480) → (64, 6, 512, 80)</code><br><br>• Weight: 480 × 480 = 230,400<br>• Bias: 480',
+        params: '~230K parameters' };
+      info['v_'+i] = { name: 'Layer '+i+': Value Projection', group: 'transformer',
+        detail: 'Projects input to Value vectors for layer '+i+' of 7. Each position produces a value that says "here is the information to pass along if attended to."<br><br><code>Linear(480, 480)</code> → reshape to 6 heads of 80 dims<br>Tensor: <code>(64, 512, 480) → (64, 512, 480) → (64, 6, 512, 80)</code><br><br>• Weight: 480 × 480 = 230,400<br>• Bias: 480',
+        params: '~230K parameters' };
       info['qkt_'+i] = { name: 'Layer '+i+': Attention Scores', group: 'transformer',
         detail: 'Each head computes how much every position should attend to every other position.<br><br><code>Q × Kᵀ / √80 → softmax</code><br>Tensor: <code>(64, 6, 512, 80) × (64, 6, 80, 512) → (64, 6, 512, 512)</code><br><br>No learnable parameters. The 512×512 matrix per head is where cross-position information mixing happens.',
         params: '0 parameters' };
@@ -168,7 +174,9 @@
     ];
     for (let i=1;i<=7;i++) {
       pipeline.push({ id:'ln_a_'+i, label:'LN', sub:'512×480', group:'transformer', rx:28, ry:14, layer:i, isLayerStart:true });
-      pipeline.push({ id:'qkv_'+i, label:'QKV '+i, sub:'512×480→512×1440', group:'transformer', rx:52, ry:16, layer:i });
+      pipeline.push({ id:'q_'+i, label:'Q '+i, sub:'512×480→6×512×80', group:'transformer', rx:46, ry:14, layer:i });
+      pipeline.push({ id:'k_'+i, label:'K '+i, sub:'512×480→6×512×80', group:'transformer', rx:46, ry:14, layer:i });
+      pipeline.push({ id:'v_'+i, label:'V '+i, sub:'512×480→6×512×80', group:'transformer', rx:46, ry:14, layer:i });
       pipeline.push({ id:'qkt_'+i, label:'QKᵀ '+i, sub:'→(6,512,512)', group:'transformer', rx:40, ry:14, layer:i });
       pipeline.push({ id:'av_'+i, label:'A·V '+i, sub:'→(6,512,80)', group:'transformer', rx:38, ry:14, layer:i });
       pipeline.push({ id:'out_'+i, label:'Out '+i, sub:'512×480→512×480', group:'transformer', rx:52, ry:16, layer:i });
@@ -260,8 +268,10 @@
     mv.projection=[[512,299,'X','in'],'×',[299,480,'W','wt'],'+',[512,480,'b','bias'],'=',[512,480,'H','out']];
     for(let i=1;i<=7;i++){
       mv['ln_a_'+i]=[[512,480,'X','in'],'→',[512,480,'γ⊙x̂+β','wt'],'=',[512,480,'H','out']];
-      mv['qkv_'+i]=[[512,480,'X','in'],'×',[480,1440,'W_QKV','wt'],'+',[512,1440,'b','bias'],'=',[512,1440,'QKV','out']];
-      mv['qkt_'+i]=['per head:','Q',[512,80,'','in'],'×',[80,512,'Kᵀ','wt'],'÷√80','→','softmax','=',[512,512,'scores','out'],'×6 heads'];
+      mv['q_'+i]=[[512,480,'X','in'],'×',[480,480,'W_Q','wt'],'+',[512,480,'b','bias'],'=',[512,480,'Q','out'],'→','reshape','→','(6,512,80)'];
+      mv['k_'+i]=[[512,480,'X','in'],'×',[480,480,'W_K','wt'],'+',[512,480,'b','bias'],'=',[512,480,'K','out'],'→','reshape','→','(6,512,80)'];
+      mv['v_'+i]=[[512,480,'X','in'],'×',[480,480,'W_V','wt'],'+',[512,480,'b','bias'],'=',[512,480,'V','out'],'→','reshape','→','(6,512,80)'];
+      mv['qkt_'+i]=['per head:',[512,80,'Q','in'],'×',[80,512,'Kᵀ','wt'],'÷√80','→','softmax','=',[512,512,'scores','out'],'×6 heads'];
       mv['av_'+i]=['per head:',[512,512,'scores','in'],'×',[512,80,'V','wt'],'=',[512,80,'head','out'],'×6 heads','→','concat','=',[512,480,'H','out']];
       mv['out_'+i]=[[512,480,'H','in'],'×',[480,480,'W_O','wt'],'+',[512,480,'b','bias'],'+ residual','=',[512,480,'H','out']];
       mv['ln_f_'+i]=mv['ln_a_'+i];
