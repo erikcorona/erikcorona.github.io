@@ -168,31 +168,52 @@
     const fRX=52, fRY=15, fCX=68, fSp=34, fSY=22;
     const fPos = features.map((f,i)=>({...f, cx:fCX, cy:fSY+i*fSp}));
     const midY = fSY + 2*fSp;
+    // Pipeline: main sequential flow (Q,K,V stored separately as parallel branches)
     const pipeline = [
-      { id:'concat', label:'Concat', sub:'512×299', group:'projection', rx:40, ry:18 },
-      { id:'projection', label:'Projection', sub:'512×299→512×480', group:'projection', rx:62, ry:20 },
+      { id:'concat', label:'Concat', sub:'0', group:'projection', rx:34, ry:16 },
+      { id:'projection', label:'Projection', sub:'144K', group:'projection', rx:42, ry:16 },
     ];
+    const parallel = []; // {layer, q, k, v} groups
     for (let i=1;i<=7;i++) {
-      pipeline.push({ id:'ln_a_'+i, label:'LN', sub:'512×480', group:'transformer', rx:28, ry:14, layer:i, isLayerStart:true });
-      pipeline.push({ id:'q_'+i, label:'Q '+i, sub:'512×480→6×512×80', group:'transformer', rx:46, ry:14, layer:i });
-      pipeline.push({ id:'k_'+i, label:'K '+i, sub:'512×480→6×512×80', group:'transformer', rx:46, ry:14, layer:i });
-      pipeline.push({ id:'v_'+i, label:'V '+i, sub:'512×480→6×512×80', group:'transformer', rx:46, ry:14, layer:i });
-      pipeline.push({ id:'qkt_'+i, label:'QKᵀ '+i, sub:'→(6,512,512)', group:'transformer', rx:40, ry:14, layer:i });
-      pipeline.push({ id:'av_'+i, label:'A·V '+i, sub:'→(6,512,80)', group:'transformer', rx:38, ry:14, layer:i });
-      pipeline.push({ id:'out_'+i, label:'Out '+i, sub:'512×480→512×480', group:'transformer', rx:52, ry:16, layer:i });
-      pipeline.push({ id:'ln_f_'+i, label:'LN', sub:'512×480', group:'transformer', rx:28, ry:14, layer:i });
-      pipeline.push({ id:'up_'+i, label:'Up '+i, sub:'512×480→512×1920', group:'transformer', rx:52, ry:16, layer:i });
-      pipeline.push({ id:'down_'+i, label:'Down '+i, sub:'512×1920→512×480', group:'transformer', rx:52, ry:16, layer:i });
+      pipeline.push({ id:'ln_a_'+i, label:'LN', sub:'960', group:'transformer', rx:22, ry:12, layer:i, isLayerStart:true, fanOut:i });
+      // Q,K,V are parallel — not in main pipeline
+      parallel.push({
+        layer:i,
+        q:{ id:'q_'+i, label:'Q '+i, sub:'230K', group:'transformer', rx:28, ry:12, layer:i },
+        k:{ id:'k_'+i, label:'K '+i, sub:'230K', group:'transformer', rx:28, ry:12, layer:i },
+        v:{ id:'v_'+i, label:'V '+i, sub:'230K', group:'transformer', rx:28, ry:12, layer:i },
+      });
+      pipeline.push({ id:'qkt_'+i, label:'QKᵀ '+i, sub:'0', group:'transformer', rx:28, ry:12, layer:i, fanIn:i });
+      pipeline.push({ id:'av_'+i, label:'A·V '+i, sub:'0', group:'transformer', rx:28, ry:12, layer:i });
+      pipeline.push({ id:'out_'+i, label:'Out '+i, sub:'230K', group:'transformer', rx:28, ry:14, layer:i });
+      pipeline.push({ id:'ln_f_'+i, label:'LN', sub:'960', group:'transformer', rx:22, ry:12, layer:i });
+      pipeline.push({ id:'up_'+i, label:'Up '+i, sub:'924K', group:'transformer', rx:28, ry:14, layer:i });
+      pipeline.push({ id:'down_'+i, label:'Down '+i, sub:'922K', group:'transformer', rx:28, ry:14, layer:i });
     }
-    pipeline.push({ id:'ln_final', label:'LN', sub:'512×480', group:'transformer', rx:28, ry:14 });
-    pipeline.push({ id:'mlm', label:'MLM Head', sub:'512×480→512×15210', group:'mlm', rx:62, ry:20 });
-    pipeline.push({ id:'loss', label:'CE Loss', sub:'−log(softmax)→mean', group:'mlm', rx:52, ry:18 });
-    const maxX=680, gap=10, rowH=52, wrapX=170;
+    pipeline.push({ id:'ln_final', label:'LN', sub:'960', group:'transformer', rx:22, ry:12 });
+    pipeline.push({ id:'mlm', label:'MLM Head', sub:'7.5M', group:'mlm', rx:42, ry:16 });
+    pipeline.push({ id:'loss', label:'CE Loss', sub:'0', group:'mlm', rx:34, ry:14 });
+    // Layout: main pipeline wrapping left-to-right
+    const maxX=680, gap=10, rowH=58, wrapX=170, pSpread=20;
     let cx=210-pipeline[0].rx, cr=0;
     pipeline.forEach((n,i)=>{
-      if(cx+2*n.rx>maxX && i>0){ cr++; cx=wrapX; }
+      // Leave extra horizontal space after fan-out nodes for the parallel Q,K,V
+      const needW = n.fanOut ? 2*n.rx + gap + 2*28 : 2*n.rx;
+      if(cx+needW>maxX && i>0){ cr++; cx=wrapX; }
       n.cx=cx+n.rx; n.cy=midY+cr*rowH; cx=n.cx+n.rx+gap;
+      // Position parallel Q,K,V between fan-out (LN) and fan-in (QKᵀ)
+      if(n.fanOut){
+        const pg=parallel.find(p=>p.layer===n.fanOut);
+        const px=cx+28; // center of Q,K,V group
+        pg.q.cx=px; pg.q.cy=n.cy-pSpread;
+        pg.k.cx=px; pg.k.cy=n.cy;
+        pg.v.cx=px; pg.v.cy=n.cy+pSpread;
+        cx=px+28+gap; // advance past the parallel group
+      }
     });
+    // Collect all nodes for rendering
+    const allNodes=[...pipeline];
+    parallel.forEach(pg=>{ allNodes.push(pg.q, pg.k, pg.v); });
     const svgH=Math.max(pipeline[pipeline.length-1].cy+40, fSY+9*fSp+fRY+10);
     document.getElementById('arch-svg').setAttribute('viewBox','0 0 700 '+svgH);
     const svg = d3.select('#arch-svg');
@@ -201,12 +222,20 @@
         .attr('x1',x1+3).attr('y1',y1).attr('x2',x2-8).attr('y2',y2)
         .attr('marker-end','url(#arrowhead)');
     }
+    function bezArrow(x1,y1,x2,y2){
+      const mx=(x1+x2)/2;
+      svg.append('path').attr('class','arrow-path')
+        .attr('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+(x2-6)+','+y2)
+        .attr('marker-end','url(#arrowhead)');
+    }
+    // Feature bezier connections to concat
     const cn=pipeline[0];
     fPos.forEach(f=>{
       const x1=f.cx+fRX,y1=f.cy,x2=cn.cx-cn.rx,y2=cn.cy;
       svg.append('path').attr('class','conn-line')
         .attr('d','M'+x1+','+y1+' C'+(x1+40)+','+y1+' '+(x2-30)+','+y2+' '+x2+','+y2);
     });
+    // Render feature nodes
     fPos.forEach(f=>{
       const c=pal[f.group], g=svg.append('g').attr('class','arch-node').attr('data-component',f.id);
       g.append('ellipse').attr('cx',f.cx).attr('cy',f.cy).attr('rx',fRX).attr('ry',fRY)
@@ -216,8 +245,10 @@
       g.append('text').attr('x',f.cx).attr('y',f.cy+10).attr('text-anchor','middle')
         .attr('fill','#6fa3ef').attr('font-size',8).attr('font-family',"'SF Mono','Fira Code',monospace").text(f.dim);
     });
+    // Pipeline arrows (skip fan-out → fan-in, those are handled separately)
     for(let i=0;i<pipeline.length-1;i++){
       const a=pipeline[i],b=pipeline[i+1];
+      if(a.fanOut) continue; // arrows go through Q,K,V instead
       if(a.cy===b.cy){ arrow(a.cx+a.rx,a.cy,b.cx-b.rx,b.cy); }
       else {
         const by=(a.cy+b.cy)/2;
@@ -226,16 +257,29 @@
           .attr('marker-end','url(#arrowhead-down)');
       }
     }
-    pipeline.forEach(n=>{
+    // Fan-out/fan-in arrows for Q,K,V parallel groups
+    parallel.forEach(pg=>{
+      const ln=pipeline.find(n=>n.fanOut===pg.layer);
+      const qkt=pipeline.find(n=>n.fanIn===pg.layer);
+      [pg.q,pg.k,pg.v].forEach(n=>{
+        // LN → Q/K/V
+        if(n.cy===ln.cy){ arrow(ln.cx+ln.rx,ln.cy,n.cx-n.rx,n.cy); }
+        else { bezArrow(ln.cx+ln.rx,ln.cy,n.cx-n.rx,n.cy); }
+        // Q/K/V → QKᵀ
+        if(n.cy===qkt.cy){ arrow(n.cx+n.rx,n.cy,qkt.cx-qkt.rx,qkt.cy); }
+        else { bezArrow(n.cx+n.rx,n.cy,qkt.cx-qkt.rx,qkt.cy); }
+      });
+    });
+    // Render all nodes
+    allNodes.forEach(n=>{
       const c=pal[n.group], g=svg.append('g').attr('class','arch-node').attr('data-component',n.id);
       g.append('ellipse').attr('cx',n.cx).attr('cy',n.cy).attr('rx',n.rx).attr('ry',n.ry)
         .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5);
       if(n.sub){
-        const fs=n.rx<=30?8:10, sfs=n.rx<=30?6.5:6.5;
         g.append('text').attr('x',n.cx).attr('y',n.cy-2).attr('text-anchor','middle')
-          .attr('fill','#e0e0e0').attr('font-size',fs).attr('font-weight',600).text(n.label);
+          .attr('fill','#e0e0e0').attr('font-size',n.rx<=24?7:9).attr('font-weight',600).text(n.label);
         g.append('text').attr('x',n.cx).attr('y',n.cy+9).attr('text-anchor','middle')
-          .attr('fill','#9a9ab0').attr('font-size',sfs).attr('font-family',"'SF Mono','Fira Code',monospace").text(n.sub);
+          .attr('fill','#9a9ab0').attr('font-size',6.5).attr('font-family',"'SF Mono','Fira Code',monospace").text(n.sub);
       } else {
         g.append('text').attr('x',n.cx).attr('y',n.cy+4).attr('text-anchor','middle')
           .attr('fill','#e0e0e0').attr('font-size',9).attr('font-weight',600).text(n.label);
