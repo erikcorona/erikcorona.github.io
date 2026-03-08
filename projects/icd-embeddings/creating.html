@@ -6,7 +6,7 @@
   <title>Creating ICD-10 Embeddings - Erik Corona</title>
   <link rel="stylesheet" href="../../styles.css">
   <style>
-    .arch-svg { width: 100%; max-width: 900px; margin: 1.5rem auto; display: block; }
+    .arch-svg { width: 100%; margin: 1.5rem auto; display: block; }
     .arch-node { cursor: default; }
     .arch-node ellipse { transition: stroke-width 0.2s, filter 0.2s; }
     .arch-node:hover ellipse { stroke-width: 2.5; filter: url(#glow); }
@@ -59,7 +59,7 @@
 
       <h3>Model Architecture</h3>
       <p>Hover over any component to explore what it does and how many parameters it contributes. The hover cards show full tensor shapes including the batch dimension of 64. The diagram labels omit the batch dimension to keep the visual clean<sup>*</sup>.</p>
-      <svg class="arch-svg" id="arch-svg" viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg">
+      <svg class="arch-svg" id="arch-svg" viewBox="0 0 1200 360" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" class="arrow-head"/></marker>
@@ -194,8 +194,8 @@
     pipeline.push({ id:'mlm', label:'MLM Head', sub:'7.5M', group:'mlm', rx:42, ry:16 });
     pipeline.push({ id:'loss', label:'CE Loss', sub:'0', group:'mlm', rx:34, ry:14 });
     // Layout: main pipeline wrapping left-to-right
-    const maxX=680, gap=10, rowH=90, wrapX=170, pSpread=30;
-    let cx=210-pipeline[0].rx, cr=0;
+    const maxX=1180, gap=10, rowH=90, wrapX=40, pSpread=30;
+    let cx=60-pipeline[0].rx, cr=0;
     pipeline.forEach((n,i)=>{
       // Leave extra horizontal space after fan-out nodes for the parallel Q,K,V
       const needW = n.fanOut ? 2*n.rx + gap + 2*28 : 2*n.rx;
@@ -215,7 +215,7 @@
     const allNodes=[...pipeline];
     parallel.forEach(pg=>{ allNodes.push(pg.q, pg.k, pg.v); });
     const svgH=Math.max(pipeline[pipeline.length-1].cy+40, fSY+9*fSp+fRY+10);
-    document.getElementById('arch-svg').setAttribute('viewBox','0 0 700 '+svgH);
+    document.getElementById('arch-svg').setAttribute('viewBox','0 0 1200 '+svgH);
     const svg = d3.select('#arch-svg');
     function arrow(x1,y1,x2,y2){
       svg.append('line').attr('class','arrow-line')
