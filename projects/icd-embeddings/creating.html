@@ -194,35 +194,42 @@
     pipeline.push({ id:'mlm', label:'MLM Head', sub:'7.5M', group:'mlm', rx:42, ry:16 });
     pipeline.push({ id:'loss', label:'CE Loss', sub:'0', group:'mlm', rx:34, ry:14 });
     // Layout: main pipeline wrapping left-to-right
-    const gap=10, rowH=90, pSpread=30;
-    // Compute maxX dynamically from container width
+    // Scale everything relative to original 700px viewBox
     const containerW=window.innerWidth || 900;
-    const maxX=containerW-20, wrapX=170;
-    let cx=210-pipeline[0].rx, cr=0;
+    const s=containerW/700;
+    const gap=10*s, rowH=90*s, pSpread=30*s;
+    const maxX=containerW-20, wrapX=170*s;
+    // Scale all node sizes
+    fPos.forEach(f=>{ f.cx=fCX*s; f.cy=fSY*s+(fPos.indexOf(f))*fSp*s; });
+    pipeline.forEach(n=>{ n.rx*=s; n.ry*=s; });
+    parallel.forEach(pg=>{ [pg.q,pg.k,pg.v].forEach(n=>{ n.rx*=s; n.ry*=s; }); });
+    const midYs = fSY*s + 2*fSp*s;
+    let cx=210*s-pipeline[0].rx, cr=0;
     pipeline.forEach((n,i)=>{
       // Leave extra horizontal space after fan-out nodes for the parallel Q,K,V
-      const needW = n.fanOut ? 2*n.rx + gap + 2*28 : 2*n.rx;
+      const needW = n.fanOut ? 2*n.rx + gap + 2*28*s : 2*n.rx;
       if(cx+needW>maxX && i>0){ cr++; cx=wrapX; }
-      n.cx=cx+n.rx; n.cy=midY+cr*rowH; cx=n.cx+n.rx+gap;
+      n.cx=cx+n.rx; n.cy=midYs+cr*rowH; cx=n.cx+n.rx+gap;
       // Position parallel Q,K,V between fan-out (LN) and fan-in (QKᵀ)
       if(n.fanOut){
         const pg=parallel.find(p=>p.layer===n.fanOut);
-        const px=cx+28; // center of Q,K,V group
+        const px=cx+pg.q.rx; // center of Q,K,V group
         pg.q.cx=px; pg.q.cy=n.cy-pSpread;
         pg.k.cx=px; pg.k.cy=n.cy;
         pg.v.cx=px; pg.v.cy=n.cy+pSpread;
-        cx=px+28+gap; // advance past the parallel group
+        cx=px+pg.q.rx+gap; // advance past the parallel group
       }
     });
     // Collect all nodes for rendering
     const allNodes=[...pipeline];
     parallel.forEach(pg=>{ allNodes.push(pg.q, pg.k, pg.v); });
-    const svgH=Math.max(pipeline[pipeline.length-1].cy+40, fSY+9*fSp+fRY+10);
+    const sfRX=fRX*s, sfRY=fRY*s;
+    const svgH=Math.max(pipeline[pipeline.length-1].cy+40*s, fPos[fPos.length-1].cy+sfRY+10*s);
     document.getElementById('arch-svg').setAttribute('viewBox','0 0 '+containerW+' '+svgH);
     const svg = d3.select('#arch-svg');
     function arrow(x1,y1,x2,y2){
       svg.append('line').attr('class','arrow-line')
-        .attr('x1',x1+3).attr('y1',y1).attr('x2',x2-8).attr('y2',y2)
+        .attr('x1',x1+3*s).attr('y1',y1).attr('x2',x2-8*s).attr('y2',y2)
         .attr('marker-end','url(#arrowhead)');
     }
     function bezArrow(x1,y1,x2,y2){
@@ -234,19 +241,19 @@
     // Feature bezier connections to concat
     const cn=pipeline[0];
     fPos.forEach(f=>{
-      const x1=f.cx+fRX,y1=f.cy,x2=cn.cx-cn.rx,y2=cn.cy;
+      const x1=f.cx+sfRX,y1=f.cy,x2=cn.cx-cn.rx,y2=cn.cy;
       svg.append('path').attr('class','conn-line')
-        .attr('d','M'+x1+','+y1+' C'+(x1+40)+','+y1+' '+(x2-30)+','+y2+' '+x2+','+y2);
+        .attr('d','M'+x1+','+y1+' C'+(x1+40*s)+','+y1+' '+(x2-30*s)+','+y2+' '+x2+','+y2);
     });
     // Render feature nodes
     fPos.forEach(f=>{
       const c=pal[f.group], g=svg.append('g').attr('class','arch-node').attr('data-component',f.id);
-      g.append('ellipse').attr('cx',f.cx).attr('cy',f.cy).attr('rx',fRX).attr('ry',fRY)
-        .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5);
-      g.append('text').attr('x',f.cx).attr('y',f.cy-3).attr('text-anchor','middle')
-        .attr('fill','#e0e0e0').attr('font-size',10).text(f.name);
-      g.append('text').attr('x',f.cx).attr('y',f.cy+10).attr('text-anchor','middle')
-        .attr('fill','#6fa3ef').attr('font-size',8).attr('font-family',"'SF Mono','Fira Code',monospace").text(f.dim);
+      g.append('ellipse').attr('cx',f.cx).attr('cy',f.cy).attr('rx',sfRX).attr('ry',sfRY)
+        .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5*s);
+      g.append('text').attr('x',f.cx).attr('y',f.cy-3*s).attr('text-anchor','middle')
+        .attr('fill','#e0e0e0').attr('font-size',10*s).text(f.name);
+      g.append('text').attr('x',f.cx).attr('y',f.cy+10*s).attr('text-anchor','middle')
+        .attr('fill','#6fa3ef').attr('font-size',8*s).attr('font-family',"'SF Mono','Fira Code',monospace").text(f.dim);
     });
     // Pipeline arrows (skip fan-out → fan-in, those are handled separately)
     for(let i=0;i<pipeline.length-1;i++){
@@ -256,7 +263,7 @@
       else {
         const by=(a.cy+b.cy)/2;
         svg.append('path').attr('class','arrow-path')
-          .attr('d','M'+a.cx+','+(a.cy+a.ry)+' C'+a.cx+','+by+' '+b.cx+','+by+' '+b.cx+','+(b.cy-b.ry-8))
+          .attr('d','M'+a.cx+','+(a.cy+a.ry)+' C'+a.cx+','+by+' '+b.cx+','+by+' '+b.cx+','+(b.cy-b.ry-8*s))
           .attr('marker-end','url(#arrowhead-down)');
       }
     }
@@ -277,26 +284,26 @@
     allNodes.forEach(n=>{
       const c=pal[n.group], g=svg.append('g').attr('class','arch-node').attr('data-component',n.id);
       g.append('ellipse').attr('cx',n.cx).attr('cy',n.cy).attr('rx',n.rx).attr('ry',n.ry)
-        .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5);
+        .attr('fill',c.fill).attr('stroke',c.stroke).attr('stroke-width',1.5*s);
       if(n.sub){
-        g.append('text').attr('x',n.cx).attr('y',n.cy-2).attr('text-anchor','middle')
-          .attr('fill','#e0e0e0').attr('font-size',n.rx<=24?7:9).attr('font-weight',600).text(n.label);
-        g.append('text').attr('x',n.cx).attr('y',n.cy+9).attr('text-anchor','middle')
-          .attr('fill','#9a9ab0').attr('font-size',6.5).attr('font-family',"'SF Mono','Fira Code',monospace").text(n.sub);
+        g.append('text').attr('x',n.cx).attr('y',n.cy-2*s).attr('text-anchor','middle')
+          .attr('fill','#e0e0e0').attr('font-size',(n.rx<=24*s?7:9)*s).attr('font-weight',600).text(n.label);
+        g.append('text').attr('x',n.cx).attr('y',n.cy+9*s).attr('text-anchor','middle')
+          .attr('fill','#9a9ab0').attr('font-size',6.5*s).attr('font-family',"'SF Mono','Fira Code',monospace").text(n.sub);
       } else {
-        g.append('text').attr('x',n.cx).attr('y',n.cy+4).attr('text-anchor','middle')
-          .attr('fill','#e0e0e0').attr('font-size',9).attr('font-weight',600).text(n.label);
+        g.append('text').attr('x',n.cx).attr('y',n.cy+4*s).attr('text-anchor','middle')
+          .attr('fill','#e0e0e0').attr('font-size',9*s).attr('font-weight',600).text(n.label);
       }
       if(n.isLayerStart){
-        svg.append('text').attr('x',n.cx).attr('y',n.cy-n.ry-5)
-          .attr('text-anchor','middle').attr('fill','#8a5a6a').attr('font-size',8).text('L'+n.layer);
+        svg.append('text').attr('x',n.cx).attr('y',n.cy-n.ry-5*s)
+          .attr('text-anchor','middle').attr('fill','#8a5a6a').attr('font-size',8*s).text('L'+n.layer);
       }
     });
     const ovG=svg.append('g').attr('class','arch-node').attr('data-component','overview');
-    ovG.append('ellipse').attr('cx',635).attr('cy',18).attr('rx',48).attr('ry',14)
+    ovG.append('ellipse').attr('cx',containerW-65*s).attr('cy',18*s).attr('rx',48*s).attr('ry',14*s)
       .attr('fill','#16213e').attr('stroke','#3a3a5a').attr('stroke-width',1).attr('stroke-dasharray','3,2');
-    ovG.append('text').attr('x',635).attr('y',22).attr('text-anchor','middle')
-      .attr('fill','#9a9ab0').attr('font-size',10).text('Overview');
+    ovG.append('text').attr('x',containerW-65*s).attr('y',22*s).attr('text-anchor','middle')
+      .attr('fill','#9a9ab0').attr('font-size',10*s).text('Overview');
     // Matrix visualization data: arrays of [rows,cols,label,type] or operator strings
     const mColors={idx:'#6fa3ef',in:'#4a7fb5',wt:'#8a5a6a',bias:'#5a9a6a',out:'#7a6a9a',emb:'#4a7fb5'};
     function dimPx(d){if(d<=1)return 5;if(d<=8)return 10;if(d<=20)return 16;if(d<=64)return 24;if(d<=128)return 32;if(d<=300)return 40;if(d<=500)return 48;if(d<=2000)return 62;return 78;}
