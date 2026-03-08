@@ -194,7 +194,7 @@
     pipeline.push({ id:'mlm', label:'MLM Head', sub:'7.5M', group:'mlm', rx:42, ry:16 });
     pipeline.push({ id:'loss', label:'CE Loss', sub:'0', group:'mlm', rx:34, ry:14 });
     // Layout: main pipeline wrapping left-to-right
-    const maxX=680, gap=10, rowH=58, wrapX=170, pSpread=20;
+    const maxX=680, gap=10, rowH=68, wrapX=170, pSpread=32;
     let cx=210-pipeline[0].rx, cr=0;
     pipeline.forEach((n,i)=>{
       // Leave extra horizontal space after fan-out nodes for the parallel Q,K,V
